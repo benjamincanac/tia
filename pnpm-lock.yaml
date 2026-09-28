@@ -171,13 +171,13 @@ importers:
         version: 1.39.0
       '@vercel/connect':
         specifier: ^2.3.3
-        version: 2.3.3(ai@7.0.116(zod@4.6.5))(eve@0.63.0(ai@7.0.116(zod@4.6.5))(microsandbox@0.7.4))
+        version: 2.3.3(ai@7.0.116(zod@4.6.5))(eve@0.67.1(ai@7.0.116(zod@4.6.5))(microsandbox@0.7.4))
       ai:
         specifier: ^7.0.116
         version: 7.0.116(zod@4.6.5)
       eve:
-        specifier: ^0.63.0
-        version: 0.63.0(ai@7.0.116(zod@4.6.5))(microsandbox@0.7.4)
+        specifier: ^0.67.1
+        version: 0.67.1(ai@7.0.116(zod@4.6.5))(microsandbox@0.7.4)
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
@@ -716,14 +716,15 @@ packages:
     engines: {node: '>=18'}
     hasBin: true
 
-  eve@0.63.0:
-    resolution: {integrity: sha512-iDv0S4MXvZimaXNTJnyB2THumRQLWQSAgpMcZsGtMNquYQpSKB1+i8sxX4KJOHHCLd04lwD+06xnh+ja7rlZIw==}
+  eve@0.67.1:
+    resolution: {integrity: sha512-dNnUBejwW8AZfi0LCj0kpXpj+9JdKViZ4EzxUOs4tttL6yThDyKvPLmN6fRiNfh9rT4NMlwbXhY2u4R+4Kb0dg==}
     engines: {node: '>=24'}
     hasBin: true
     peerDependencies:
       '@opentelemetry/api': ^1.0.0
       ai: ^7.0.105
       braintrust: ^3.0.0
+      chat: ^4.41.0
       dd-trace: ^6.13.0
       just-bash: ^3.1.0
       microsandbox: ^0.5.0
@@ -731,6 +732,8 @@ packages:
       '@opentelemetry/api':
         optional: true
       braintrust:
+        optional: true
+      chat:
         optional: true
       dd-trace:
         optional: true
@@ -1164,12 +1167,12 @@ snapshots:
     dependencies:
       execa: 5.1.1
 
-  '@vercel/connect@2.3.3(ai@7.0.116(zod@4.6.5))(eve@0.63.0(ai@7.0.116(zod@4.6.5))(microsandbox@0.7.4))':
+  '@vercel/connect@2.3.3(ai@7.0.116(zod@4.6.5))(eve@0.67.1(ai@7.0.116(zod@4.6.5))(microsandbox@0.7.4))':
     dependencies:
       '@vercel/oidc': 3.8.9
     optionalDependencies:
       ai: 7.0.116(zod@4.6.5)
-      eve: 0.63.0(ai@7.0.116(zod@4.6.5))(microsandbox@0.7.4)
+      eve: 0.67.1(ai@7.0.116(zod@4.6.5))(microsandbox@0.7.4)
 
   '@vercel/oidc@3.2.0': {}
 
@@ -1238,7 +1241,7 @@ snapshots:
       '@esbuild/win32-ia32': 0.28.2
       '@esbuild/win32-x64': 0.28.2
 
-  eve@0.63.0(ai@7.0.116(zod@4.6.5))(microsandbox@0.7.4):
+  eve@0.67.1(ai@7.0.116(zod@4.6.5))(microsandbox@0.7.4):
     dependencies:
       ai: 7.0.116(zod@4.6.5)
       nitro: 3.0.260903-beta
