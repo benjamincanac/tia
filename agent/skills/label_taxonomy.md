@@ -16,6 +16,7 @@ You never pick labels. This page explains what the plan contains so you can desc
 | `needs verification` | Likely fixed in a release, waiting for the reporter to confirm. | yes |
 | `duplicate` | Same problem as another issue. Maintainers are asked to close. | yes |
 | `answered` | The thread is explicitly resolved. Maintainers are asked to close. | yes |
+| `regression` | A report that names the version it worked in or the upgrade that broke it. Maintainers are told right away. | no |
 | the repo's next major label | Requires a breaking change. | yes |
 | `stale` | Idle and likely obsolete. Maintainers are asked to decide. | no |
 | an area label | Only when the repository opted in. Part of the codebase involved, as declared by the repository: a package, a command, a component. The label format is the repository's own, such as `pkg: kit`. Most repositories record areas without labeling them, `classify_issue` then returns them in `areas` and nothing shows on the issue. | no |

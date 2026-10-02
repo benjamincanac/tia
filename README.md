@@ -19,6 +19,7 @@ classify_issue ─▶ track_upstream ─▶ validate_reproduction
 - [`apply_triage`](agent/tools/apply_triage.ts) is the only tool that writes to an issue. It enforces dry-run, one comment of 80 words per run, the label allow-list, and the rule that human applied labels stay.
 - Runs that need an approval happen in a Discord channel, with Approve and Cancel buttons. Without that channel they are forced to dry-run.
 - Text written by GitHub users never reaches the model's prompt. An @-mention is reduced by Jev to "triage request or not".
+- A report that says it worked in an earlier version gets the `regression` label and a mention, and shows first in the weekly digest.
 - Raw Jev answers are stored next to every action, for threshold tuning.
 
 ## Configuration
@@ -55,7 +56,7 @@ There is no install webhook, so the first webhook a repository sends asks for it
 
 ## Labels
 
-Nothing to set up. tia creates a label the first time it applies it and never edits an existing one. It can apply `duplicate`, `answered`, `question`, `needs verification`, `needs reproduction`, `stale`, the next major label and `upstream/<repo>`. It only removes the labels that several issue forms of the repository apply, such as `triage`. A repository without such a label has nothing to remove.
+Nothing to set up. tia creates a label the first time it applies it and never edits an existing one. It can apply `duplicate`, `answered`, `question`, `needs verification`, `needs reproduction`, `regression`, `stale`, the next major label and `upstream/<repo>`. It only removes the labels that several issue forms of the repository apply, such as `triage`. A repository without such a label has nothing to remove.
 
 The kind of issue is read from the forms too. Each form says how the repository marks it, with an Issue Type, with labels such as `bug`, or with both, and tia marks an unmarked issue the same way. The form with a reproduction field is the one that gets the reproduction and fixed checks. A repository without forms gets neither type nor label.
 

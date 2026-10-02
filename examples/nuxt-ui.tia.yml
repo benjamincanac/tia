@@ -14,7 +14,7 @@ package:
 nextMajor: v5
 securityPolicy: https://github.com/nuxt/.github/blob/main/SECURITY.md
 help: https://nuxt.com
-decisions: [type, question, upstream, reproduction, fixed, duplicate, answered, breaking, area, stale]
+decisions: [type, question, upstream, reproduction, fixed, duplicate, answered, breaking, regression, area, stale]
 thresholds: {}          # overrides of the defaults in agent/config.ts
 sweep: { followUpDays: 14, mentionDays: 30, staleDays: 60 }
 discord:

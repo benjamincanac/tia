@@ -1,0 +1,51 @@
+{
+  "config": {
+    "maintainers": [
+      "maintainer"
+    ],
+    "upstreams": [
+      "unovue/reka-ui",
+      "tailwindlabs/tailwindcss"
+    ],
+    "package": {
+      "name": "@acme/ui"
+    },
+    "nextMajor": "v5",
+    "reproduction": {
+      "blank": [
+        "acme-ui-starter"
+      ]
+    },
+    "securityPolicy": "https://example.com/SECURITY.md",
+    "areas": [
+      {
+        "kind": "component",
+        "names": [
+          "Button",
+          "Select",
+          "SelectMenu",
+          "Modal",
+          "Table",
+          "Input",
+          "Tooltip"
+        ]
+      }
+    ]
+  },
+  "latestVersion": "1.4.0",
+  "issue": {
+    "title": "Modal no longer traps focus after upgrading to 1.4.0",
+    "body": "### Environment\n\n- @acme/ui: 1.4.0\n- Vue: 3.5.13\n- Nuxt: 3.14.0\n\n### Description\n\nSince upgrading from 1.3.2 to 1.4.0, pressing Tab inside an open `UModal` moves focus to the page behind it. On 1.3.2 focus stayed inside the modal. Downgrading to 1.3.2 makes the problem go away, nothing else changed in our app.\n\n### Reproduction\n\nhttps://github.com/annakim/acme-modal-focus-repro\n\n### Expected behavior\n\nFocus stays inside the modal while it is open, as it did in 1.3.2.",
+    "author": "annakim",
+    "authorAssociation": "NONE",
+    "labels": [
+      "triage"
+    ],
+    "type": null,
+    "createdAt": "2026-08-14T07:20:00Z",
+    "comments": []
+  },
+  "similar": [],
+  "fixedCandidates": [],
+  "upstreamCandidates": []
+}

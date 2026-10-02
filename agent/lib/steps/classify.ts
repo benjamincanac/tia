@@ -154,6 +154,12 @@ export async function classify(context: TriageContext, signal?: AbortSignal): Pr
       if (first) facts.push(`Ask which version of ${config.package?.name ?? "the project"} they are using.`);
     }
 
+    // Not a decision either: a regression is urgent, not triaged. The maintainers are told now, and the issue stays where it is.
+    if (!resolved && kind?.report && isEnabled(config, "regression") && !has("regression") && answers.is_regression.probability >= t.labels) {
+      labels.push("regression");
+      mentions.push({ template: "regression", detail: `${reported ? `Reported on ${reported}.` : ""}${summary}`.trim() });
+    }
+
     if (!resolved && !waitsForReproduction && isEnabled(config, "fixed") && kind?.report && !has("needs verification")) {
       next.push("check_fixed_in_release");
     }

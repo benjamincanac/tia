@@ -12,6 +12,7 @@ export const DECISIONS = [
   "duplicate",
   "answered",
   "breaking",
+  "regression",
   "area",
   "stale",
 ] as const;

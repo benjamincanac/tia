@@ -28,6 +28,11 @@ export const classifyQuestions = {
     instructions:
       "Would resolving this require a breaking change to the public API (renaming or removing options, changing defaults or documented behavior) so that it can only ship in the next major version?",
   },
+  is_regression: {
+    type: "boolean",
+    instructions:
+      "Does the report say this worked in an earlier version and broke after an update? True only when it names the version that worked, the version that broke it, or the upgrade after which it started. The word regression alone is not evidence.",
+  },
   needs_human: {
     type: "boolean",
     instructions:

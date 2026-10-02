@@ -45,8 +45,9 @@ export async function buildDigest(config: RepoConfig, signal?: AbortSignal): Pro
   const [intakeLabels, kinds] = await Promise.all([loadIntakeLabels(config, signal), loadIssueKinds(config, signal)]);
   const intake = intakeLabels.map((label) => `"${label}"`).join(",");
 
-  const [duplicate, answered, verification, question, upstreamClosed, open, requests, untriaged, resolved, decisions] =
+  const [regression, duplicate, answered, verification, question, upstreamClosed, open, requests, untriaged, resolved, decisions] =
     await Promise.all([
+      labeled(repo, "regression", signal),
       labeled(repo, "duplicate", signal),
       labeled(repo, "answered", signal),
       labeled(repo, "needs verification", signal),
@@ -75,6 +76,7 @@ export async function buildDigest(config: RepoConfig, signal?: AbortSignal): Pro
   return {
     repo,
     awaiting: [
+      { reason: "Regressions", issues: regression },
       { reason: "Close as duplicate", issues: duplicate },
       { reason: "Close as answered", issues: answered },
       { reason: "Verify fixed", issues: verification },

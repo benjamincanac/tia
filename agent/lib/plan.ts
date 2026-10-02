@@ -5,6 +5,7 @@ export const MENTION_TEMPLATES = {
   convert_to_discussion: "this looks like a usage question, consider converting it to a Q&A discussion.",
   close_duplicate: "this looks like a duplicate, consider closing it.",
   close_answered: "this looks resolved, consider closing it.",
+  regression: "this looks like a regression.",
   verify_fixed: "this looks fixed in a release but the reporter has not confirmed.",
   upstream_closed: "the linked upstream issue was closed, worth a retest or a dependency bump.",
   needs_reproduction_idle: "still no reproduction after the follow-up.",
