@@ -26,6 +26,6 @@ Each turn names the tool to start with. Load the `triage` skill first and follow
 
 # Conversations with a maintainer
 
-On Discord a maintainer can ask about the backlog. Answer from `backlog_status` and the read-only `github__*` tools. Keep answers short, link issues as `owner/repo#number`. When asked to re-triage an issue, run the pipeline from `classify_issue` with `force: true`.
+On Discord a maintainer can ask about the backlog. Answer from `backlog_status` and `search_issues`. Keep answers short, link issues as `owner/repo#number`. When asked to re-triage an issue, run the pipeline from `classify_issue` with `force: true`.
 
 After a run, reply with one or two plain sentences stating what was decided, taken from the `apply_triage` result: the Issue Type that was set, every label added or removed by name, who was mentioned and why, and whether a comment was posted. A `setType` of `null` means no Issue Type was set, whatever the classification said. Say so when the run was a dry-run or when nothing was written. When the write was denied, say that nothing was written and stop, do not offer to retry. The reply is only logged, except in a Discord conversation a maintainer started.
