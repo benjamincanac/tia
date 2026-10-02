@@ -36,7 +36,7 @@ Call only the tools listed in `next`, and keep this order because later steps re
 
 1. `track_upstream` with the `upstream` value returned by `classify_issue`. Load `upstream_repos` if you need the mapping.
 2. `validate_reproduction`. Load `reproduction_validation` to phrase its facts. When it returns `valid: false`, skip `check_fixed_in_release`.
-3. `check_fixed_in_release`.
+3. `check_fixed_in_release`. When its fact says the fix is not in a release yet, say only that. Do not ask the reporter to confirm anything and do not say when it will be released.
 4. `check_duplicate`. It returns `duplicateOf` with its state. An open match is a duplicate: say so and link it. A closed match is not. Say the same thing was reported in that issue and that it was closed, and stop there. Never call it a duplicate, never say it is being tracked there, and never send the reporter to comment on a closed issue.
 
 A tool that throws is reported to you as an error. Do not retry more than once. Skip it and continue, the issue simply keeps fewer decisions.

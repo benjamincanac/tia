@@ -140,6 +140,11 @@ export function fixedQuestions(candidates: readonly { id: string; summary: strin
       instructions:
         "Is the problem described in the issue likely fixed in a published release, given the candidates? A merged pull request that references this issue, addresses the same behavior and shipped in a release is strong evidence. A reproduction still pinned to an older version is not evidence against it.",
     },
+    is_addressed: {
+      type: "boolean",
+      instructions:
+        "Does the chosen candidate address the problem described in the issue, whether or not it shipped in a release yet? A merged pull request that references this issue and changes the same behavior is strong evidence. One that only mentions the issue in passing is not.",
+    },
   } as const satisfies Record<string, Question>;
 }
 

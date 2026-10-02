@@ -429,6 +429,19 @@ export function isBot(login: string, type: string): boolean {
   return type === "Bot" || login.endsWith("[bot]");
 }
 
+const MAX_REFERENCED_ISSUES = 10;
+
+/**
+ * Issues a pull request mentions without closing them. GitHub closes the ones behind a closing
+ * keyword itself, so a run on those would only find them closed.
+ */
+export function referencedIssues(text: string): number[] {
+  const closing = /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s*:?\s+#(\d+)/gi;
+  const closed = new Set([...text.matchAll(closing)].map((match) => Number(match[1])));
+  const numbers = [...text.matchAll(/(?<![\w/])#(\d+)\b/g)].map((match) => Number(match[1]));
+  return [...new Set(numbers)].filter((number) => !closed.has(number)).slice(0, MAX_REFERENCED_ISSUES);
+}
+
 /** Labels currently on the issue that were applied by a human. The bot never removes those. */
 export function humanAppliedLabels(timeline: TimelineEvent[]): Set<string> {
   const appliedBy = new Map<string, boolean>();

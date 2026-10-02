@@ -3,7 +3,7 @@ import { githubChannel, type GitHubInboundContext } from "eve/channels/github";
 import { z } from "zod";
 
 import { githubConnector, isProduction } from "../config";
-import { isBot, loadRepoConfig, noteInstallation } from "../lib/github";
+import { isBot, loadRepoConfig, noteInstallation, referencedIssues } from "../lib/github";
 import { SETUP_BRANCH } from "../lib/setup";
 import { enqueue, requestRepoPass, type QueueItem } from "../lib/store";
 
@@ -14,6 +14,8 @@ const MENTION = new RegExp(`(^|\\s)@${BOT_NAME}\\b`, "i");
 const mergedPullRequest = z.object({
   merged: z.boolean().default(false),
   head: z.object({ ref: z.string().default("") }).default({ ref: "" }),
+  title: z.string().default(""),
+  body: z.string().nullable().default(null),
 });
 
 const issueLabels = z.object({
@@ -94,9 +96,15 @@ export default githubChannel({
     // Merging the setup pull request is the moment a repository becomes tia's, and the only signal
     // of it: there is no installation hook. It sweeps the backlog instead of waiting for 03:00 UTC.
     const merged = mergedPullRequest.safeParse(pullRequest.raw);
-    if (pullRequest.action === "closed" && isProduction() && merged.success && merged.data.merged && merged.data.head.ref === SETUP_BRANCH) {
-      await requestRepoPass(ctx.repository.fullName, "sweep");
+    if (pullRequest.action !== "closed" || !merged.success || !merged.data.merged) return null;
+    if (merged.data.head.ref === SETUP_BRANCH) {
+      if (isProduction()) await requestRepoPass(ctx.repository.fullName, "sweep");
+      return null;
     }
+    // A merged fix is news for the open issues it mentions. They get the pass a release gives:
+    // the fix is re-checked and nothing else, instead of waiting for 03:00 UTC or the next release.
+    const numbers = referencedIssues(`${merged.data.title}\n${merged.data.body ?? ""}`).filter((number) => number !== pullRequest.pullRequestNumber);
+    for (const issueNumber of numbers) await queue(ctx, { issueNumber, reason: "release" });
     return null;
   },
 

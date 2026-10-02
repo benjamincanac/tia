@@ -118,11 +118,18 @@ export async function checkFixedInRelease(
     signal,
   );
   const fixedBy = candidates.find((candidate) => candidate.id === answers.fixed_by.choice) ?? null;
-  if (fixedBy === null || answers.is_fixed.probability < config.thresholds.is_fixed) {
-    return { answers, candidates, fixedBy: null, patch: {} };
+  if (fixedBy === null) return { answers, candidates, fixedBy: null, patch: {} };
+
+  // A merged fix that no release carries yet. There is nothing for the reporter to verify, so the
+  // issue keeps its labels and only learns that the fix exists. The release pass does the rest.
+  if (fixedBy.release === null) {
+    if (answers.is_addressed.probability < config.thresholds.is_fixed) return { answers, candidates, fixedBy: null, patch: {} };
+    return { answers, candidates, fixedBy, patch: { facts: [`A fix was merged in ${fixedBy.id}. It is not in a release yet.`] } };
   }
 
-  const evidence = `This looks fixed by ${fixedBy.id}${fixedBy.release ? ` in ${fixedBy.release}` : ""}.`;
+  if (answers.is_fixed.probability < config.thresholds.is_fixed) return { answers, candidates, fixedBy: null, patch: {} };
+
+  const evidence = `This looks fixed by ${fixedBy.id} in ${fixedBy.release}.`;
 
   return {
     answers,

@@ -1,0 +1,58 @@
+{
+  "config": {
+    "maintainers": [
+      "maintainer"
+    ],
+    "upstreams": [
+      "unovue/reka-ui",
+      "tailwindlabs/tailwindcss"
+    ],
+    "package": {
+      "name": "@acme/ui"
+    },
+    "nextMajor": "v5",
+    "reproduction": {
+      "blank": [
+        "acme-ui-starter"
+      ]
+    },
+    "securityPolicy": "https://example.com/SECURITY.md",
+    "areas": [
+      {
+        "kind": "component",
+        "names": [
+          "Button",
+          "Select",
+          "SelectMenu",
+          "Modal",
+          "Table",
+          "Input",
+          "Tooltip"
+        ]
+      }
+    ]
+  },
+  "latestVersion": "1.4.0",
+  "issue": {
+    "title": "UInput loses cursor position while typing quickly",
+    "body": "### Environment\n\n- @acme/ui: 1.4.0\n- Vue: 3.5.13\n\n### Description\n\nTyping fast into `UInput` occasionally jumps the caret back to the end of the field, as if the component re-renders and resets selection state mid-keystroke.\n\n### Reproduction\n\nhttps://github.com/limwei/acme-input-caret-repro\n\n### Expected behavior\n\nThe caret should stay exactly where I'm typing.",
+    "author": "limwei",
+    "authorAssociation": "NONE",
+    "labels": [
+      "triage"
+    ],
+    "type": null,
+    "createdAt": "2026-08-11T08:30:00Z",
+    "comments": []
+  },
+  "similar": [],
+  "fixedCandidates": [
+    {
+      "id": "#512",
+      "summary": "Merged pull request that references this issue, not released yet: fix(Input): preserve caret position when the bound value updates externally",
+      "url": "https://github.com/acme/ui/pull/512",
+      "release": null
+    }
+  ],
+  "upstreamCandidates": []
+}
