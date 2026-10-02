@@ -24,7 +24,7 @@ The kind of issue is marked the way the repository's issue forms mark it: an Iss
 
 ## Removed by the bot
 
-The intake labels, once a decision from the first table is taken, and `needs reproduction` when the reporter provides one. Intake labels are the ones several of the repository's issue forms apply, such as `triage` or `pending triage`. A repository without them has nothing to remove. A label applied by a human is never removed. `apply_triage` enforces this and reports the labels it kept in `keptHumanLabels`.
+The intake labels, once a decision from the first table is taken, and `needs reproduction` when the reporter provides one, in a comment or by editing the description. Intake labels are the ones several of the repository's issue forms apply, such as `triage` or `pending triage`. A repository without them has nothing to remove. A label applied by a human is never removed. `apply_triage` enforces this and reports the labels it kept in `keptHumanLabels`.
 
 ## Never applied by the bot
 

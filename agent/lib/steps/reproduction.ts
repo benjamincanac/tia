@@ -133,12 +133,17 @@ export async function validateReproduction(context: TriageContext, signal?: Abor
   if (links.length > 0 && !valid) {
     patch.addLabels = issue.labels.includes("needs reproduction") ? [] : ["needs reproduction"];
     patch.facts = [`The reproduction is the unmodified starter template: ${links.map((link) => link.url).join(", ")}.`, "REPRODUCTION_REQUEST"];
-  } else if (valid && valid.kind !== "playground" && reported && latestVersion && isBehind(reported, latestVersion)) {
+  } else if (issue.labels.includes("needs reproduction")) {
+    // The label was waiting for this. Written steps count as much as a link, so no link is not a reason to keep it.
+    patch.removeLabels = ["needs reproduction"];
+    patch.facts = [`Thank @${issue.author} for the reproduction.`];
+  }
+  if (valid && valid.kind !== "playground" && reported && latestVersion && isBehind(reported, latestVersion)) {
     // Only a sandbox or a repository pins a version. The repository's own playground and docs run its current release.
     // Asked once. The sweep would otherwise repeat it on every run.
     const first = context.dryRun ? true : await markOnce(issue, "retest-on-latest");
     if (first && config.package) {
-      patch.facts = ["RETEST_REQUEST"];
+      patch.facts = [...(patch.facts ?? []), "RETEST_REQUEST"];
       patch.retest = { name: config.package.name, version: reported, latest: latestVersion };
     }
   }

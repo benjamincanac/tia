@@ -58,7 +58,14 @@ export default githubChannel({
 
   async onIssue(ctx, issue) {
     await seen(ctx);
-    if (issue.action !== "opened" && issue.action !== "reopened") return null;
+    if (issue.action === "opened" || issue.action === "reopened") return queue(ctx, { issueNumber: issue.issueNumber, reason: "issue" });
+    // A reporter who adds the reproduction to the description instead of a comment is not left
+    // waiting for the daily sweep. Any other edit is not worth a run.
+    if (issue.action !== "edited") return null;
+    const parsed = issueLabels.safeParse(issue.raw);
+    if (!parsed.success || parsed.data.user?.login !== ctx.sender.login) return null;
+    const labels = parsed.data.labels.map((label) => (typeof label === "string" ? label : label.name));
+    if (!labels.includes("needs reproduction")) return null;
     return queue(ctx, { issueNumber: issue.issueNumber, reason: "issue" });
   },
 

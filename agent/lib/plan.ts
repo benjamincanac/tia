@@ -107,7 +107,8 @@ export function mergePlan(plan: TriagePlan, step: string, patch: PlanPatch): Tri
     mentions,
     areas: unique([...plan.areas, ...(patch.areas ?? [])]),
     // A retest asks about a reproduction too, so it goes with it.
-    facts: [...plan.facts, ...(patch.facts ?? [])].filter((fact) => !drop || (fact !== "REPRODUCTION_REQUEST" && fact !== "RETEST_REQUEST")),
+    // Two steps can reach the same fact, such as the thanks for a reproduction. It is said once.
+    facts: unique([...plan.facts, ...(patch.facts ?? [])]).filter((fact) => !drop || (fact !== "REPRODUCTION_REQUEST" && fact !== "RETEST_REQUEST")),
     escalate: plan.escalate || (patch.escalate ?? false),
     security: plan.security || (patch.security ?? false),
     skipped: patch.skipped ?? plan.skipped,
