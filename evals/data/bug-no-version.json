@@ -1,0 +1,51 @@
+{
+  "config": {
+    "maintainers": [
+      "maintainer"
+    ],
+    "upstreams": [
+      "unovue/reka-ui",
+      "tailwindlabs/tailwindcss"
+    ],
+    "package": {
+      "name": "@acme/ui"
+    },
+    "nextMajor": "v5",
+    "reproduction": {
+      "blank": [
+        "acme-ui-starter"
+      ]
+    },
+    "securityPolicy": "https://example.com/SECURITY.md",
+    "areas": [
+      {
+        "kind": "component",
+        "names": [
+          "Button",
+          "Select",
+          "SelectMenu",
+          "Modal",
+          "Table",
+          "Input",
+          "Tooltip"
+        ]
+      }
+    ]
+  },
+  "latestVersion": "1.4.0",
+  "issue": {
+    "title": "SelectMenu closes immediately when tapping an option on iOS Safari",
+    "body": "### Environment\n\n- Browser: iOS Safari (real device)\n\n### Description\n\nOn iOS Safari, tapping an option inside `USelectMenu` closes the menu without selecting it. The `change` event never fires. Works fine on desktop Chrome and Firefox.\n\n### Reproduction\n\nhttps://github.com/saralind/acme-select-repro\n\n### Expected behavior\n\nTapping an option should select it and close the menu with the value applied.\n\n### Actual behavior\n\nThe menu closes and the previous value stays selected.",
+    "author": "saralind",
+    "authorAssociation": "NONE",
+    "labels": [
+      "triage"
+    ],
+    "type": null,
+    "createdAt": "2026-08-10T09:12:00Z",
+    "comments": []
+  },
+  "similar": [],
+  "fixedCandidates": [],
+  "upstreamCandidates": []
+}

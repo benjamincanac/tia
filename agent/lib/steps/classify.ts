@@ -6,10 +6,11 @@ import {
   kindQuestion,
   upstreamQuestion,
 } from "../jev/questions";
-import { kindOf } from "../issue-forms";
+import { kindOf, sectionOf } from "../issue-forms";
 import type { TriageContext } from "../context";
 import { ask, choiceConfidence, clipBody, clipComments } from "../jev";
 import type { PlanPatch } from "../plan";
+import { markOnce } from "../store";
 
 export type NextStep =
   | "validate_reproduction"
@@ -142,6 +143,15 @@ export async function classify(context: TriageContext, signal?: AbortSignal): Pr
       } else {
         next.push("validate_reproduction");
       }
+    }
+
+    // The form asks for a version and the report has none. Asked once, in the same comment as
+    // whatever else the run says: the reporter may answer in a comment, which the body never shows.
+    const versionHeading = context.reproduction.versionHeading;
+    const reported = sectionOf(issue.body, versionHeading)?.match(/\d+\.\d+(?:\.\d+)?(?:-[\w.]+)?/)?.[0] ?? null;
+    if (!resolved && kind?.report && isEnabled(config, "reproduction") && versionHeading && !reported) {
+      const first = context.dryRun ? true : await markOnce(issue, "version-request");
+      if (first) facts.push(`Ask which version of ${config.package?.name ?? "the project"} they are using.`);
     }
 
     if (!resolved && !waitsForReproduction && isEnabled(config, "fixed") && kind?.report && !has("needs verification")) {
