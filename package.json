@@ -19,14 +19,14 @@
   },
   "dependencies": {
     "@upstash/redis": "^1.39.0",
-    "@vercel/connect": "^2.3.3",
-    "ai": "^7.0.116",
+    "@vercel/connect": "^2.4.0",
+    "ai": "^7.0.127",
     "eve": "^0.67.2",
     "yaml": "^2.9.1",
     "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@types/node": "^24.19.0",
+    "@types/node": "^24.19.1",
     "microsandbox": "^0.5.10",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"
@@ -34,5 +34,5 @@
   "engines": {
     "node": "24.x"
   },
-  "packageManager": "pnpm@12.6.0"
+  "packageManager": "pnpm@12.9.0"
 }
