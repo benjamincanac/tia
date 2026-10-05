@@ -29,11 +29,6 @@
       "enabled": false
     },
     {
-      "description": "eve runs everything, so it gets its own revertable pull request.",
-      "matchPackageNames": ["eve"],
-      "groupName": "eve"
-    },
-    {
       "description": "eve declares microsandbox ^0.5.0 as its peer, a newer minor breaks the local build.",
       "matchPackageNames": ["microsandbox"],
       "allowedVersions": "<0.6.0"
