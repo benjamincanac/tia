@@ -171,13 +171,13 @@ importers:
         version: 1.39.0
       '@vercel/connect':
         specifier: ^2.4.0
-        version: 2.4.0(ai@7.0.127(zod@4.6.5))(eve@0.67.2(ai@7.0.127(zod@4.6.5))(microsandbox@0.5.10))
+        version: 2.4.0(ai@7.0.127(zod@4.6.5))(eve@0.71.0(ai@7.0.127(zod@4.6.5))(microsandbox@0.5.10))
       ai:
         specifier: ^7.0.127
         version: 7.0.127(zod@4.6.5)
       eve:
-        specifier: ^0.67.2
-        version: 0.67.2(ai@7.0.127(zod@4.6.5))(microsandbox@0.5.10)
+        specifier: ^0.71.0
+        version: 0.71.0(ai@7.0.127(zod@4.6.5))(microsandbox@0.5.10)
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
@@ -701,8 +701,8 @@ packages:
     engines: {node: '>=18'}
     hasBin: true
 
-  eve@0.67.2:
-    resolution: {integrity: sha512-SMdO0GbKLDIN0vsV6zbKca0OlWYaGb79yrdJLIAm7HWWjO/X2M598dJdxVTBWV+20SDtrLv0yrSLmb9CxP5QCQ==}
+  eve@0.71.0:
+    resolution: {integrity: sha512-BQn1TBB8booio8tAnKRqxLEJPorHqWwD8DMXFUV4Cbk2TF9XCqqlFpasjxURHoW58G/rq5S6sx2LafpfAmAGVQ==}
     engines: {node: '>=24'}
     hasBin: true
     peerDependencies:
@@ -873,8 +873,8 @@ packages:
     resolution: {integrity: sha512-RYONW2MeafgYlkVOKYKkA/Ag7BmXqgIWCa8t1m0JcxrQg9pI9lEqRhAOruOBCbAohOa/gkCF+iPi9hrgvTzu6Q==}
     engines: {node: '>=20.18.1'}
 
-  undici@8.9.0:
-    resolution: {integrity: sha512-aWZpUj7XoGonMClx4gdDRfgBjqeA+F473aDmROQQbM9n6PRfK/u1q/a0X4wMTgcHfT8H6fpbt98PFuDUwFg2YA==}
+  undici@8.10.2:
+    resolution: {integrity: sha512-/y4/bH9YNU5hi9NIrpOuvGXFcxrj3CMrV+/AYpowAYTpHn8gX/XPFjNy766FPoYY0miQhdW977JFWKGNhBdwyQ==}
     engines: {node: '>=22.19.0'}
 
   unenv@2.0.0-rc.24:
@@ -1144,12 +1144,12 @@ snapshots:
     dependencies:
       execa: 5.1.1
 
-  '@vercel/connect@2.4.0(ai@7.0.127(zod@4.6.5))(eve@0.67.2(ai@7.0.127(zod@4.6.5))(microsandbox@0.5.10))':
+  '@vercel/connect@2.4.0(ai@7.0.127(zod@4.6.5))(eve@0.71.0(ai@7.0.127(zod@4.6.5))(microsandbox@0.5.10))':
     dependencies:
       '@vercel/oidc': 4.0.0
     optionalDependencies:
       ai: 7.0.127(zod@4.6.5)
-      eve: 0.67.2(ai@7.0.127(zod@4.6.5))(microsandbox@0.5.10)
+      eve: 0.71.0(ai@7.0.127(zod@4.6.5))(microsandbox@0.5.10)
 
   '@vercel/oidc@3.2.0': {}
 
@@ -1218,11 +1218,11 @@ snapshots:
       '@esbuild/win32-ia32': 0.28.2
       '@esbuild/win32-x64': 0.28.2
 
-  eve@0.67.2(ai@7.0.127(zod@4.6.5))(microsandbox@0.5.10):
+  eve@0.71.0(ai@7.0.127(zod@4.6.5))(microsandbox@0.5.10):
     dependencies:
       ai: 7.0.127(zod@4.6.5)
       nitro: 3.0.260903-beta
-      undici: 8.9.0
+      undici: 8.10.2
     optionalDependencies:
       microsandbox: 0.5.10
 
@@ -1383,7 +1383,7 @@ snapshots:
 
   undici@7.29.1: {}
 
-  undici@8.9.0: {}
+  undici@8.10.2: {}
 
   unenv@2.0.0-rc.24:
     dependencies:
