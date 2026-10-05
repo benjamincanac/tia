@@ -56,7 +56,10 @@ export async function writeApproval<T>({ toolInput }: ApprovalContext<T>): Promi
   if (!requireApproval()) return "not-applicable";
   // A comment the tool would refuse is sent back to the model first. Otherwise the maintainer approves
   // it, the tool throws, and they are asked a second time for the rewrite.
-  const context = plan ? await loadTriageContext(input.data).catch(() => null) : null;
-  const problem = plan && context ? commentProblem(plan, comment, context.reproduction) : null;
+  // An issue that cannot be read, a number that was never one or an issue deleted since it was
+  // queued, has nothing to approve. The tool would throw right after the maintainer's click.
+  const context = await loadTriageContext(input.data).catch(() => null);
+  if (!context) return { type: "denied", reason: "The issue could not be read. End the run without calling apply_triage again." };
+  const problem = plan ? commentProblem(plan, comment, context.reproduction) : null;
   return problem ? { type: "denied", reason: problem } : "user-approval";
 }

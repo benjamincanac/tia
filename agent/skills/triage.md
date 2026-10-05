@@ -11,7 +11,7 @@ Four rules hold for the whole run:
 1. Call a tool only when this page tells you to, or when a tool returned its name in `next`. A tool missing from `next` must not be called, whatever the issue looks like.
 2. Call each tool at most once.
 3. `search_issues` is for a maintainer's questions, never for a triage run. The pipeline tools read GitHub themselves.
-4. End every run with `apply_triage`, even when there is nothing to write.
+4. End every run with `apply_triage`, even when there is nothing to write. The one exception: when the entry tool of step 1 throws, the issue could not be read. Stop there and say so.
 
 ## 1. Entry
 

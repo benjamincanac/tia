@@ -16,6 +16,12 @@ const mergedPullRequest = z.object({
   head: z.object({ ref: z.string().default("") }).default({ ref: "" }),
   title: z.string().default(""),
   body: z.string().nullable().default(null),
+  user: z.object({ login: z.string(), type: z.string() }).nullable().default(null),
+});
+
+const openIssue = z.object({
+  state: z.string(),
+  pull_request: z.unknown().optional(),
 });
 
 const issueLabels = z.object({
@@ -101,10 +107,22 @@ export default githubChannel({
       if (isProduction()) await requestRepoPass(ctx.repository.fullName, "sweep");
       return null;
     }
+    // A dependency update quotes the changelog of another project, whose numbers are not issues
+    // of this repository. The sender is whoever merged it, so `queue` does not catch the author.
+    const author = merged.data.user;
+    if (author && isBot(author.login, author.type)) return null;
     // A merged fix is news for the open issues it mentions. They get the pass a release gives:
     // the fix is re-checked and nothing else, instead of waiting for 03:00 UTC or the next release.
     const numbers = referencedIssues(`${merged.data.title}\n${merged.data.body ?? ""}`).filter((number) => number !== pullRequest.pullRequestNumber);
-    for (const issueNumber of numbers) await queue(ctx, { issueNumber, reason: "release" });
+    const { owner, name } = ctx.repository;
+    for (const issueNumber of numbers) {
+      // A number in a pull request is not always an open issue of this repository: it can be
+      // another pull request, a closed issue or a reference copied from another changelog.
+      const issue = await ctx.github.request<unknown>({ method: "GET", path: `/repos/${owner}/${name}/issues/${issueNumber}` }).catch(() => null);
+      const parsed = openIssue.safeParse(issue?.body);
+      if (!issue?.ok || !parsed.success || parsed.data.state !== "open" || parsed.data.pull_request !== undefined) continue;
+      await queue(ctx, { issueNumber, reason: "release" });
+    }
     return null;
   },
 

@@ -438,7 +438,9 @@ const MAX_REFERENCED_ISSUES = 10;
 export function referencedIssues(text: string): number[] {
   const closing = /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s*:?\s+#(\d+)/gi;
   const closed = new Set([...text.matchAll(closing)].map((match) => Number(match[1])));
-  const numbers = [...text.matchAll(/(?<![\w/])#(\d+)\b/g)].map((match) => Number(match[1]));
+  // `&` rules out character references: a dependency update writes `#&#8203;123` so that the
+  // changelog it quotes links nothing, and `&#8203;` would read as issue 8203.
+  const numbers = [...text.matchAll(/(?<![\w/&])#(\d+)\b/g)].map((match) => Number(match[1]));
   return [...new Set(numbers)].filter((number) => !closed.has(number)).slice(0, MAX_REFERENCED_ISSUES);
 }
 
