@@ -105,9 +105,10 @@ export async function classify(context: TriageContext, signal?: AbortSignal): Pr
   const has = (label: string) => issue.labels.includes(label);
 
   // A `question` the reporter's form applied is not a decision. It is checked like any other issue, and the label is never added twice.
+  // A report often ends on a question. When the kind is confidently one that asks for a reproduction, the report wins.
   if (has("question") && !context.reporterLabels.has("question")) {
     decided = true;
-  } else if (isEnabled(config, "question") && answers.is_question.probability >= t.labels) {
+  } else if (isEnabled(config, "question") && answers.is_question.probability >= t.labels && !chosen?.report) {
     labels.push("question");
     mentions.push({ template: "convert_to_discussion", detail: summary.trim() });
     facts.push(`This reads as a usage question. A Q&A discussion is a better place for it${config.help ? `, and ${config.help} may already answer it` : ""}. A maintainer may convert it.`);

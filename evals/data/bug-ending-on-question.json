@@ -1,0 +1,51 @@
+{
+  "config": {
+    "maintainers": [
+      "maintainer"
+    ],
+    "upstreams": [
+      "unovue/reka-ui",
+      "tailwindlabs/tailwindcss"
+    ],
+    "package": {
+      "name": "@acme/ui"
+    },
+    "nextMajor": "v5",
+    "reproduction": {
+      "blank": [
+        "acme-ui-starter"
+      ]
+    },
+    "securityPolicy": "https://example.com/SECURITY.md",
+    "areas": [
+      {
+        "kind": "component",
+        "names": [
+          "Button",
+          "Select",
+          "SelectMenu",
+          "Modal",
+          "Table",
+          "Input",
+          "Tooltip"
+        ]
+      }
+    ]
+  },
+  "latestVersion": "1.4.0",
+  "issue": {
+    "title": "Typing a UTable column as a relation breaks the filter types",
+    "body": "### Environment\n\n- @acme/ui: 1.4.0\n- TypeScript: 5.9.2\n\n### Description\n\nWhen a column of `UTable` is typed as a relation to another row type, the `filters` prop no longer type checks. Passing `{ parent: { slug: { $null: true } } }` gives `Object literal may only specify known properties, and 'slug' does not exist in type 'ColumnFilter<undefined>'`. The filter works at runtime, only the types reject it. Wrapping it in `{ data: { slug } }` makes the error go away but then the filter does nothing.\n\nIs there a way to write my row type so this works?",
+    "author": "typedtom",
+    "authorAssociation": "NONE",
+    "labels": [
+      "triage"
+    ],
+    "type": null,
+    "createdAt": "2026-09-22T07:30:00Z",
+    "comments": []
+  },
+  "similar": [],
+  "fixedCandidates": [],
+  "upstreamCandidates": []
+}
