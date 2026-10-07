@@ -472,6 +472,12 @@ export function reporterAppliedLabels(timeline: TimelineEvent[], author: string)
   return new Set([...appliedBy].filter(([, login]) => login === author).map(([name]) => name));
 }
 
+/** The Issue Type was last set by the author of the issue, which is what an issue form does. */
+export function reporterSetType(timeline: TimelineEvent[], author: string): boolean {
+  const last = timeline.findLast((event) => event.event?.startsWith("issue_type_"));
+  return last !== undefined && last.event !== "issue_type_removed" && last.actor?.login === author;
+}
+
 const releaseSchema = z.object({
   tag_name: z.string(),
   html_url: z.string(),

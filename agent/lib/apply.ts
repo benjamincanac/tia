@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { isProduction, type RepoConfig } from "../config";
 import { addComment, addLabels, ensureLabel, removeLabel, setIssueType } from "./github";
 import type { IssueKind, ReproductionSettings } from "./issue-forms";
-import { labelStyle } from "./labels";
+import { isManagedLabel, labelStyle } from "./labels";
 import { MENTION_TEMPLATES, type RetestRequest, type TriagePlan } from "./plan";
 import { getLastAnnounced, isPreviewWriteAllowed, recordDecision, setLastAnnounced } from "./store";
 
@@ -108,6 +108,7 @@ export async function applyPlan(
   plan: TriagePlan,
   written: string,
   humanLabels: ReadonlySet<string>,
+  reporterLabels: ReadonlySet<string>,
   currentLabels: readonly string[],
   reproduction: ReproductionSettings,
   intakeLabels: readonly string[],
@@ -117,8 +118,12 @@ export async function applyPlan(
   const allowed = (label: string) => isAllowedLabel(config, label) || kinds.some((kind) => kind.labels.includes(label));
   const addedLabels = plan.addLabels.filter((label) => allowed(label) && !currentLabels.includes(label));
   const removable = plan.removeLabels.filter((label) => currentLabels.includes(label));
-  // Intake labels come from the issue forms, so they count as applied by the reporter. They are the only ones of those the bot removes.
-  const removedLabels = removable.filter((label) => intakeLabels.includes(label) || !humanLabels.has(label));
+  // Intake labels come from the issue forms, so they count as applied by the reporter. So does what the reporter picked
+  // with a form, the label of a kind or one of tia's own, which goes when the issue turns out to be something else.
+  // They are the only ones of those the bot removes.
+  const fromForm = (label: string) =>
+    intakeLabels.includes(label) || (reporterLabels.has(label) && (isManagedLabel(label) || kinds.some((kind) => kind.labels.includes(label))));
+  const removedLabels = removable.filter((label) => fromForm(label) || !humanLabels.has(label));
   const keptHumanLabels = removable.filter((label) => !removedLabels.includes(label));
   const comment = plan.escalate ? "" : buildComment(config, plan, written, reproduction);
 

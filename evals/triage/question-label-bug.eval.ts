@@ -10,7 +10,7 @@ interface Applied {
 
 export default defineEval({
   description:
-    "A bug report filed through a form that applies `question` is not a decided question: it gets its kind and a reproduction request, and stays in triage.",
+    "A bug report filed through a form that applies `question` is not a decided question: it gets its kind and a reproduction request, loses the `question` label and stays in triage.",
   async test(t) {
     const turn = await t.send(triagePrompt("question-label-bug"));
     t.succeeded();
@@ -22,7 +22,7 @@ export default defineEval({
           applied.setType === "Bug" &&
           applied.addedLabels.includes("needs reproduction") &&
           !applied.addedLabels.includes("question") &&
-          !applied.removedLabels.includes("question") &&
+          applied.removedLabels.includes("question") &&
           !applied.removedLabels.includes("triage")
         );
       },

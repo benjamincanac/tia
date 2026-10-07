@@ -35,8 +35,10 @@ export function issueState(context: TriageContext, maxComments?: number) {
     title: issue.title,
     body: clipBody(issue.body),
     authorAssociation: issue.authorAssociation,
-    // One of tia's labels that the reporter's form applied is a claim the questions are here to check. Shown as a fact, it tilts the answers toward itself.
-    existingLabels: issue.labels.filter((label) => !(isManagedLabel(label) && context.reporterLabels.has(label))),
+    // What the reporter's form applied is a claim the questions are here to check: one of tia's labels, or the label of a kind. Shown as a fact, it tilts the answers toward itself.
+    existingLabels: issue.labels.filter(
+      (label) => !(context.reporterLabels.has(label) && (isManagedLabel(label) || isKindLabel(context, label))),
+    ),
     comments: clipComments(issue.comments, maxComments).map((comment) => ({
       author: comment.author,
       authorAssociation: comment.authorAssociation,
@@ -44,6 +46,11 @@ export function issueState(context: TriageContext, maxComments?: number) {
       body: comment.body,
     })),
   };
+}
+
+/** A label a kind applies and the intake does not: several forms share the intake labels, so they say nothing of the kind. */
+function isKindLabel(context: TriageContext, label: string): boolean {
+  return !context.intakeLabels.includes(label) && context.kinds.some((kind) => kind.labels.includes(label));
 }
 
 export async function classify(context: TriageContext, signal?: AbortSignal): Promise<ClassifyOutcome> {
@@ -61,15 +68,20 @@ export async function classify(context: TriageContext, signal?: AbortSignal): Pr
     signal,
   );
 
-  // What the issue already carries wins. Below the threshold the kind is unknown, and the steps for reports do not run on a guess.
+  // Below the threshold the kind is unknown, and the steps for reports do not run on a guess.
   const chosen = choiceConfidence(answers.type) >= t.labels ? context.kinds.find((candidate) => candidate.name === answers.type.choice) : null;
-  const kind = kindOf(issue, context.kinds) ?? chosen ?? null;
+  // What a maintainer or tia marked on the issue wins. What the reporter's form marked is a claim, and a confident answer replaces it.
+  const marked = kindOf(issue, context.kinds);
+  const byType = marked !== null && marked.type !== null && marked.type === issue.type;
+  const claimed = marked !== null && (byType ? context.reporterType : marked.labels.some((label) => context.reporterLabels.has(label)));
+  const kind = (claimed ? (chosen ?? marked) : (marked ?? chosen)) ?? null;
   const type = kind?.type ?? kind?.name ?? issue.type;
   const report = kind?.report === true;
   const patch: PlanPatch = { addLabels: [], removeLabels: [], facts: [], mentions: [] };
   const labels = patch.addLabels ?? [];
   const facts = patch.facts ?? [];
   const mentions = patch.mentions ?? [];
+  const replaced: string[] = [];
   const next: NextStep[] = [];
   let decided = false;
 
@@ -97,8 +109,10 @@ export async function classify(context: TriageContext, signal?: AbortSignal): Pr
 
   // The kind is marked the way the repository's form marks it: an Issue Type, labels, or both.
   if (isEnabled(config, "type") && kind) {
-    if (!issue.type && kind.type) patch.setType = kind.type;
+    if (kind.type && (!issue.type || (context.reporterType && kind.type !== issue.type))) patch.setType = kind.type;
     labels.push(...kind.labels);
+    // The labels of the kind the reporter picked go with it.
+    if (marked && marked !== kind) replaced.push(...marked.labels.filter((label) => isKindLabel(context, label) && !kind.labels.includes(label)));
   }
 
   // A decision already on the issue is not announced twice: re-evaluations stay silent about it.
@@ -114,6 +128,9 @@ export async function classify(context: TriageContext, signal?: AbortSignal): Pr
     facts.push(`This reads as a usage question. A Q&A discussion is a better place for it${config.help ? `, and ${config.help} may already answer it` : ""}. A maintainer may convert it.`);
     decided = true;
   } else {
+    // The reporter's form said question and the issue is confidently another kind: the label goes, like the label of a kind would.
+    if (has("question") && kind) replaced.push("question");
+
     const upstream = answers.upstream.choice;
     if (isEnabled(config, "upstream") && upstream !== "none" && choiceConfidence(answers.upstream) >= t.labels) {
       if (!has(upstreamLabel(upstream))) {
@@ -189,7 +206,7 @@ export async function classify(context: TriageContext, signal?: AbortSignal): Pr
   }
 
   patch.addLabels = labels.filter((label) => !issue.labels.includes(label));
-  if (decided) patch.removeLabels = context.intakeLabels;
+  patch.removeLabels = [...replaced, ...(decided ? context.intakeLabels : [])];
 
   return { answers, patch, next, type, report };
 }
