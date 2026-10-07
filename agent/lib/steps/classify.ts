@@ -9,6 +9,7 @@ import {
 import { kindOf, sectionOf } from "../issue-forms";
 import type { TriageContext } from "../context";
 import { ask, choiceConfidence, clipBody, clipComments } from "../jev";
+import { isManagedLabel } from "../labels";
 import type { PlanPatch } from "../plan";
 import { markOnce } from "../store";
 
@@ -34,7 +35,10 @@ export function issueState(context: TriageContext, maxComments?: number) {
     title: issue.title,
     body: clipBody(issue.body),
     authorAssociation: issue.authorAssociation,
-    existingLabels: issue.labels,
+    // What the reporter's form applied is a claim the questions are here to check: one of tia's labels, or the label of a kind. Shown as a fact, it tilts the answers toward itself.
+    existingLabels: issue.labels.filter(
+      (label) => !(context.reporterLabels.has(label) && (isManagedLabel(label) || isKindLabel(context, label))),
+    ),
     comments: clipComments(issue.comments, maxComments).map((comment) => ({
       author: comment.author,
       authorAssociation: comment.authorAssociation,
@@ -42,6 +46,11 @@ export function issueState(context: TriageContext, maxComments?: number) {
       body: comment.body,
     })),
   };
+}
+
+/** A label a kind applies and the intake does not: several forms share the intake labels, so they say nothing of the kind. */
+function isKindLabel(context: TriageContext, label: string): boolean {
+  return !context.intakeLabels.includes(label) && context.kinds.some((kind) => kind.labels.includes(label));
 }
 
 export async function classify(context: TriageContext, signal?: AbortSignal): Promise<ClassifyOutcome> {
@@ -59,15 +68,22 @@ export async function classify(context: TriageContext, signal?: AbortSignal): Pr
     signal,
   );
 
-  // What the issue already carries wins. Below the threshold the kind is unknown, and the steps for reports do not run on a guess.
+  // Below the threshold the kind is unknown, and the steps for reports do not run on a guess.
   const chosen = choiceConfidence(answers.type) >= t.labels ? context.kinds.find((candidate) => candidate.name === answers.type.choice) : null;
-  const kind = kindOf(issue, context.kinds) ?? chosen ?? null;
+  // What a maintainer or tia marked on the issue wins. What the reporter's form marked is a claim, and a confident answer replaces it.
+  const marked = kindOf(issue, context.kinds);
+  const byType = marked !== null && marked.type !== null && marked.type === issue.type;
+  const claimed = marked !== null && (byType ? context.reporterType : marked.labels.some((label) => context.reporterLabels.has(label)));
+  // A kind without an Issue Type cannot replace one that has it: the type would stay on the issue and contradict the labels.
+  const replacement = byType && !chosen?.type ? null : chosen;
+  const kind = (claimed ? (replacement ?? marked) : (marked ?? chosen)) ?? null;
   const type = kind?.type ?? kind?.name ?? issue.type;
   const report = kind?.report === true;
   const patch: PlanPatch = { addLabels: [], removeLabels: [], facts: [], mentions: [] };
   const labels = patch.addLabels ?? [];
   const facts = patch.facts ?? [];
   const mentions = patch.mentions ?? [];
+  const replaced: string[] = [];
   const next: NextStep[] = [];
   let decided = false;
 
@@ -95,21 +111,32 @@ export async function classify(context: TriageContext, signal?: AbortSignal): Pr
 
   // The kind is marked the way the repository's form marks it: an Issue Type, labels, or both.
   if (isEnabled(config, "type") && kind) {
-    if (!issue.type && kind.type) patch.setType = kind.type;
+    if (kind.type && (!issue.type || (context.reporterType && kind.type !== issue.type))) patch.setType = kind.type;
     labels.push(...kind.labels);
+    // The labels of the kind the reporter picked go with it, and so does a reproduction request the new kind has no use for.
+    if (marked && marked !== kind) {
+      replaced.push(...marked.labels.filter((label) => isKindLabel(context, label) && !kind.labels.includes(label)));
+      if (!kind.report) replaced.push("needs reproduction");
+    }
   }
 
   // A decision already on the issue is not announced twice: re-evaluations stay silent about it.
   const has = (label: string) => issue.labels.includes(label);
 
-  if (has("question")) {
+  // A `question` the reporter's form applied is not a decision. It is checked like any other issue, and the label is never added twice.
+  // A report often ends on a question. When the kind is confidently one that asks for a reproduction, the report wins.
+  if (has("question") && !context.reporterLabels.has("question")) {
     decided = true;
-  } else if (isEnabled(config, "question") && answers.is_question.probability >= t.labels) {
+  } else if (isEnabled(config, "question") && answers.is_question.probability >= t.labels && !chosen?.report) {
     labels.push("question");
     mentions.push({ template: "convert_to_discussion", detail: summary.trim() });
     facts.push(`This reads as a usage question. A Q&A discussion is a better place for it${config.help ? `, and ${config.help} may already answer it` : ""}. A maintainer may convert it.`);
     decided = true;
   } else {
+    // The reporter's form said question and the issue is confidently another kind: the label goes, like the label of a kind would.
+    // A kind that carries `question` itself is not another kind, and a kind read from the issue is not an answer.
+    if (has("question") && chosen && chosen === kind && !chosen.labels.includes("question")) replaced.push("question");
+
     const upstream = answers.upstream.choice;
     if (isEnabled(config, "upstream") && upstream !== "none" && choiceConfidence(answers.upstream) >= t.labels) {
       if (!has(upstreamLabel(upstream))) {
@@ -185,7 +212,9 @@ export async function classify(context: TriageContext, signal?: AbortSignal): Pr
   }
 
   patch.addLabels = labels.filter((label) => !issue.labels.includes(label));
-  if (decided) patch.removeLabels = context.intakeLabels;
+  // Only what the reporter's form applied or tia applied can go. A label from anyone else is a decision.
+  const removable = replaced.filter((label) => has(label) && (context.reporterLabels.has(label) || !context.humanLabels.has(label)));
+  patch.removeLabels = [...removable, ...(decided ? context.intakeLabels : [])];
 
   return { answers, patch, next, type, report };
 }

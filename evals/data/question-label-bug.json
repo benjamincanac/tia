@@ -1,0 +1,56 @@
+{
+  "config": {
+    "maintainers": [
+      "maintainer"
+    ],
+    "upstreams": [
+      "unovue/reka-ui",
+      "tailwindlabs/tailwindcss"
+    ],
+    "package": {
+      "name": "@acme/ui"
+    },
+    "nextMajor": "v5",
+    "reproduction": {
+      "blank": [
+        "acme-ui-starter"
+      ]
+    },
+    "securityPolicy": "https://example.com/SECURITY.md",
+    "help": "https://discord.acme.dev",
+    "areas": [
+      {
+        "kind": "component",
+        "names": [
+          "Button",
+          "Select",
+          "SelectMenu",
+          "Modal",
+          "Table",
+          "Input",
+          "Tooltip"
+        ]
+      }
+    ]
+  },
+  "latestVersion": "1.4.0",
+  "reporterLabels": [
+    "question"
+  ],
+  "issue": {
+    "title": "UModal throws \"Cannot read properties of undefined\" when closed with Escape",
+    "body": "### Environment\n\n- @acme/ui: 1.4.0\n- Vue: 3.5.13\n\n### Description\n\nSince upgrading, pressing Escape while a `UModal` is open closes it but throws `TypeError: Cannot read properties of undefined (reading 'focus')` in the console, and the page stops responding to keyboard shortcuts until I reload. Clicking the close button works fine. It happens on every modal in our app.\n\n### Expected behavior\n\nEscape closes the modal without an error.",
+    "author": "devkatya",
+    "authorAssociation": "NONE",
+    "labels": [
+      "question",
+      "triage"
+    ],
+    "type": null,
+    "createdAt": "2026-09-20T09:15:00Z",
+    "comments": []
+  },
+  "similar": [],
+  "fixedCandidates": [],
+  "upstreamCandidates": []
+}

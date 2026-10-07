@@ -28,7 +28,7 @@ async function describeWrite(input: unknown, runId: string): Promise<string> {
   const plan = recorded ?? emptyPlan(ref, runId, true);
 
   const lines = [`**[${owner}/${repo}#${issueNumber}](<https://github.com/${owner}/${repo}/issues/${issueNumber}>)**`];
-  if (plan.setType) lines.push(`Type: ${plan.setType}`);
+  if (plan.setType) lines.push(`Type: ${context?.issue.type ? `${context.issue.type} → ` : ""}${plan.setType}`);
   // The plan is what the steps asked for. Only labels the issue carries can be removed, and only ones it lacks added.
   const current = context?.issue.labels ?? [];
   const add = plan.addLabels.filter((label) => !current.includes(label));

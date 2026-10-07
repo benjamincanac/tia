@@ -35,7 +35,7 @@ export default defineTool({
     const problem = commentProblem(plan, comment, context.reproduction);
     if (problem) throw new Error(problem);
 
-    const actions = await applyPlan(context.config, plan, comment, context.humanLabels, context.issue.labels, context.reproduction, context.intakeLabels, context.kinds);
+    const actions = await applyPlan(context.config, plan, comment, context.humanLabels, context.reporterLabels, context.issue.labels, context.reproduction, context.intakeLabels, context.kinds);
     return { applied: !actions.dryRun, ...actions };
   },
 });

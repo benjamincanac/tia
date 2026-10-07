@@ -1,0 +1,50 @@
+{
+  "config": {
+    "maintainers": [
+      "maintainer"
+    ],
+    "upstreams": [
+      "unovue/reka-ui",
+      "tailwindlabs/tailwindcss"
+    ],
+    "package": {
+      "name": "@acme/ui"
+    },
+    "reproduction": {
+      "blank": [
+        "acme-ui-starter"
+      ]
+    },
+    "securityPolicy": "https://example.com/SECURITY.md",
+    "areas": [
+      {
+        "kind": "component",
+        "names": [
+          "Button",
+          "Select",
+          "SelectMenu",
+          "Modal",
+          "Table",
+          "Input",
+          "Tooltip"
+        ]
+      }
+    ]
+  },
+  "latestVersion": "1.4.0",
+  "issue": {
+    "title": "Allow a per instance delay on UTooltip",
+    "body": "### Description\n\nIt would be great if `UTooltip` accepted a `delay` per instance. Today the delay can only be set once on the provider, so a dense toolbar and a help icon on the same page have to share it.\n\n### Proposed API\n\n```vue\n<UTooltip text=\"Save\" :delay=\"0\" />\n```\n\n### Why\n\nToolbars want instant tooltips, form hints want a slower one. Nothing is broken today, this is a new option.",
+    "author": "toolbarfan",
+    "authorAssociation": "NONE",
+    "labels": [
+      "triage"
+    ],
+    "type": "Bug",
+    "createdAt": "2026-09-25T11:00:00Z",
+    "comments": []
+  },
+  "similar": [],
+  "fixedCandidates": [],
+  "upstreamCandidates": []
+}
