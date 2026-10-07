@@ -1,6 +1,6 @@
 import { defineEval } from "eve/evals";
 
-import { triagePrompt } from "./shared";
+import { postedComment, triagePrompt } from "./shared";
 
 interface Applied {
   addedLabels: string[];
@@ -12,7 +12,7 @@ export default defineEval({
   description:
     "A usage question filed through a form that applies `question` is confirmed: no second `question` label, the maintainers are told, and it leaves triage.",
   async test(t) {
-    await t.send(triagePrompt("question-label-question"));
+    const turn = await t.send(triagePrompt("question-label-question"));
     t.succeeded();
     t.calledTool("classify_issue");
     t.notCalledTool("check_duplicate");
@@ -30,6 +30,7 @@ export default defineEval({
     });
     t.judge(
       "States that the issue is a usage question and that converting it to a Q&A discussion was suggested.",
+      { on: postedComment(turn) },
     ).atLeast(0.7);
   },
 });

@@ -74,7 +74,9 @@ export async function classify(context: TriageContext, signal?: AbortSignal): Pr
   const marked = kindOf(issue, context.kinds);
   const byType = marked !== null && marked.type !== null && marked.type === issue.type;
   const claimed = marked !== null && (byType ? context.reporterType : marked.labels.some((label) => context.reporterLabels.has(label)));
-  const kind = (claimed ? (chosen ?? marked) : (marked ?? chosen)) ?? null;
+  // A kind without an Issue Type cannot replace one that has it: the type would stay on the issue and contradict the labels.
+  const replacement = byType && !chosen?.type ? null : chosen;
+  const kind = (claimed ? (replacement ?? marked) : (marked ?? chosen)) ?? null;
   const type = kind?.type ?? kind?.name ?? issue.type;
   const report = kind?.report === true;
   const patch: PlanPatch = { addLabels: [], removeLabels: [], facts: [], mentions: [] };
