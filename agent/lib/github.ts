@@ -458,6 +458,20 @@ export function humanAppliedLabels(timeline: TimelineEvent[]): Set<string> {
   return new Set([...appliedBy].filter(([, human]) => human).map(([name]) => name));
 }
 
+/**
+ * Labels currently on the issue that its author applied. An issue form applies its labels as the
+ * reporter, so they say what the reporter picked, not what anyone decided.
+ */
+export function reporterAppliedLabels(timeline: TimelineEvent[], author: string): Set<string> {
+  const appliedBy = new Map<string, string>();
+  for (const event of timeline) {
+    if (!event.label) continue;
+    if (event.event === "labeled") appliedBy.set(event.label.name, event.actor?.login ?? "");
+    else if (event.event === "unlabeled") appliedBy.delete(event.label.name);
+  }
+  return new Set([...appliedBy].filter(([, login]) => login === author).map(([name]) => name));
+}
+
 const releaseSchema = z.object({
   tag_name: z.string(),
   html_url: z.string(),

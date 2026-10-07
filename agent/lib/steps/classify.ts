@@ -9,6 +9,7 @@ import {
 import { kindOf, sectionOf } from "../issue-forms";
 import type { TriageContext } from "../context";
 import { ask, choiceConfidence, clipBody, clipComments } from "../jev";
+import { isManagedLabel } from "../labels";
 import type { PlanPatch } from "../plan";
 import { markOnce } from "../store";
 
@@ -34,7 +35,8 @@ export function issueState(context: TriageContext, maxComments?: number) {
     title: issue.title,
     body: clipBody(issue.body),
     authorAssociation: issue.authorAssociation,
-    existingLabels: issue.labels,
+    // One of tia's labels that the reporter's form applied is a claim the questions are here to check. Shown as a fact, it tilts the answers toward itself.
+    existingLabels: issue.labels.filter((label) => !(isManagedLabel(label) && context.reporterLabels.has(label))),
     comments: clipComments(issue.comments, maxComments).map((comment) => ({
       author: comment.author,
       authorAssociation: comment.authorAssociation,
@@ -102,7 +104,8 @@ export async function classify(context: TriageContext, signal?: AbortSignal): Pr
   // A decision already on the issue is not announced twice: re-evaluations stay silent about it.
   const has = (label: string) => issue.labels.includes(label);
 
-  if (has("question")) {
+  // A `question` the reporter's form applied is not a decision. It is checked like any other issue, and the label is never added twice.
+  if (has("question") && !context.reporterLabels.has("question")) {
     decided = true;
   } else if (isEnabled(config, "question") && answers.is_question.probability >= t.labels) {
     labels.push("question");

@@ -11,6 +11,7 @@ import {
   listPinnedIssues,
   loadAreas,
   loadRepoConfig,
+  reporterAppliedLabels,
   type Issue,
   type IssueRef,
 } from "./github";
@@ -51,6 +52,8 @@ const fixtureSchema = z.object({
   latestVersion: z.string().default("1.0.0"),
   /** What the issue forms of a real repository would give. Fixtures have no forms to read. */
   intakeLabels: z.array(z.string()).default(["triage"]),
+  /** Labels the issue carries because the reporter's form applied them. The others count as applied by tia or a maintainer. */
+  reporterLabels: z.array(z.string()).default([]),
   /** The label of the version field a real form would have. Fixtures write it as a heading of their body. */
   versionHeading: z.string().nullable().default("Environment"),
   /** Kinds a real repository would declare in its forms. Defaults to forms that set an Issue Type of the same name. */
@@ -87,6 +90,8 @@ export interface TriageContext {
   /** Kinds of issue the repository declares in its forms. */
   kinds: IssueKind[];
   humanLabels: Set<string>;
+  /** Labels the reporter applied, through an issue form. A claim to check, not a decision. */
+  reporterLabels: Set<string>;
   lastHumanActivity: number | null;
   pinned: boolean;
   fixture: Fixture | null;
@@ -116,6 +121,7 @@ async function loadFixture(ref: IssueRef): Promise<TriageContext> {
     intakeLabels: fixture.intakeLabels,
     kinds: fixture.kinds,
     humanLabels: new Set(),
+    reporterLabels: new Set(fixture.reporterLabels),
     lastHumanActivity: null,
     pinned: false,
     fixture,
@@ -166,11 +172,17 @@ export async function loadTriageContext(
     intakeLabels,
     kinds,
     humanLabels: humanAppliedLabels(timeline),
+    // A maintainer who labels their own issue decided it.
+    reporterLabels: isMaintainer(config, issue.author) ? new Set() : reporterAppliedLabels(timeline, issue.author),
     lastHumanActivity: humanTimes.length ? Math.max(...humanTimes) : null,
     pinned: pinned.includes(ref.issueNumber),
     fixture: null,
     dryRun: false,
   };
+}
+
+function isMaintainer(config: RepoConfig, login: string): boolean {
+  return config.maintainers.some((maintainer) => maintainer.toLowerCase() === login.toLowerCase());
 }
 
 const HOUR_MS = 60 * 60_000;
@@ -180,7 +192,7 @@ export function skipReason(context: TriageContext, force: boolean): string | nul
   const { issue, config } = context;
   if (issue.isPullRequest) return "pull request";
   if (issue.state !== "open") return "closed";
-  if (!config.triageMaintainerIssues && config.maintainers.some((login) => login.toLowerCase() === issue.author.toLowerCase())) {
+  if (!config.triageMaintainerIssues && isMaintainer(config, issue.author)) {
     return "authored by a maintainer";
   }
   if (issue.author.toLowerCase().startsWith("renovate")) return "authored by renovate";
