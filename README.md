@@ -57,7 +57,7 @@ There is no install webhook, so the first webhook a repository sends asks for it
 
 ## Labels
 
-Nothing to set up. tia creates a label the first time it applies it and never edits an existing one. It can apply `duplicate`, `answered`, `question`, `needs verification`, `needs reproduction`, `regression`, `stale`, the next major label and `upstream/<repo>`. It only removes labels that come from the issue forms: the ones several forms apply, such as `triage`, and the one a reporter picked with a form when the issue turns out to be something else. A repository without such a label has nothing to remove.
+Nothing to set up. tia creates a label the first time it applies it and never edits an existing one. It can apply `duplicate`, `answered`, `question`, `needs verification`, `needs reproduction`, `regression`, `stale`, the next major label and `upstream/<repo>`. Of the labels it did not apply itself, it only removes the ones that come from the issue forms: the ones several forms apply, such as `triage`, and the one a reporter picked with a form when the issue turns out to be something else. A repository without such a label has nothing to remove.
 
 The kind of issue is read from the forms too. Each form says how the repository marks it, with an Issue Type, with labels such as `bug`, or with both, and tia marks an unmarked issue the same way. What a form marked is the reporter's pick, not a decision: when Jev is confident the issue is another kind, tia replaces the Issue Type or the label, and a `question` label from a form goes the same way. A kind set by a maintainer stays. The form with a reproduction field is the one that gets the reproduction and fixed checks. A repository without forms gets neither type nor label.
 

@@ -1,0 +1,97 @@
+{
+  "config": {
+    "maintainers": [
+      "maintainer"
+    ],
+    "upstreams": [
+      "unovue/reka-ui",
+      "tailwindlabs/tailwindcss"
+    ],
+    "package": {
+      "name": "@acme/ui"
+    },
+    "nextMajor": "v5",
+    "reproduction": {
+      "blank": [
+        "acme-ui-starter"
+      ]
+    },
+    "securityPolicy": "https://example.com/SECURITY.md",
+    "help": "https://discord.acme.dev",
+    "areas": [
+      {
+        "kind": "component",
+        "names": [
+          "Button",
+          "Select",
+          "SelectMenu",
+          "Modal",
+          "Table",
+          "Input",
+          "Tooltip"
+        ]
+      }
+    ],
+    "decisions": [
+      "type",
+      "upstream",
+      "answered",
+      "reproduction",
+      "regression",
+      "fixed",
+      "duplicate",
+      "breaking",
+      "area",
+      "stale"
+    ]
+  },
+  "latestVersion": "1.4.0",
+  "reporterLabels": [
+    "question"
+  ],
+  "issue": {
+    "title": "How can I disable a single option in USelect?",
+    "body": "I have a `USelect` with a list of plans and I'd like one of them to show up greyed out and not be selectable for users on the free tier. Is there a prop on the items for that, or should I filter the list myself? I couldn't find it in the docs.",
+    "author": "samir-b",
+    "authorAssociation": "NONE",
+    "labels": [
+      "question",
+      "needs triage"
+    ],
+    "type": null,
+    "createdAt": "2026-09-20T09:15:00Z",
+    "comments": []
+  },
+  "similar": [],
+  "fixedCandidates": [],
+  "upstreamCandidates": [],
+  "kinds": [
+    {
+      "name": "Bug report",
+      "description": "Report something that does not work.",
+      "labels": [
+        "bug"
+      ],
+      "report": true
+    },
+    {
+      "name": "Feature request",
+      "description": "Suggest an idea.",
+      "labels": [
+        "enhancement"
+      ],
+      "report": false
+    },
+    {
+      "name": "Question",
+      "description": "Ask how to use the library.",
+      "labels": [
+        "question"
+      ],
+      "report": false
+    }
+  ],
+  "intakeLabels": [
+    "needs triage"
+  ]
+}

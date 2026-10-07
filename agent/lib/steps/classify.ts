@@ -113,8 +113,11 @@ export async function classify(context: TriageContext, signal?: AbortSignal): Pr
   if (isEnabled(config, "type") && kind) {
     if (kind.type && (!issue.type || (context.reporterType && kind.type !== issue.type))) patch.setType = kind.type;
     labels.push(...kind.labels);
-    // The labels of the kind the reporter picked go with it.
-    if (marked && marked !== kind) replaced.push(...marked.labels.filter((label) => isKindLabel(context, label) && !kind.labels.includes(label)));
+    // The labels of the kind the reporter picked go with it, and so does a reproduction request the new kind has no use for.
+    if (marked && marked !== kind) {
+      replaced.push(...marked.labels.filter((label) => isKindLabel(context, label) && !kind.labels.includes(label)));
+      if (!kind.report) replaced.push("needs reproduction");
+    }
   }
 
   // A decision already on the issue is not announced twice: re-evaluations stay silent about it.
@@ -131,7 +134,8 @@ export async function classify(context: TriageContext, signal?: AbortSignal): Pr
     decided = true;
   } else {
     // The reporter's form said question and the issue is confidently another kind: the label goes, like the label of a kind would.
-    if (has("question") && kind) replaced.push("question");
+    // A kind that carries `question` itself is not another kind, and a kind read from the issue is not an answer.
+    if (has("question") && chosen && chosen === kind && !chosen.labels.includes("question")) replaced.push("question");
 
     const upstream = answers.upstream.choice;
     if (isEnabled(config, "upstream") && upstream !== "none" && choiceConfidence(answers.upstream) >= t.labels) {
@@ -208,7 +212,9 @@ export async function classify(context: TriageContext, signal?: AbortSignal): Pr
   }
 
   patch.addLabels = labels.filter((label) => !issue.labels.includes(label));
-  patch.removeLabels = [...replaced, ...(decided ? context.intakeLabels : [])];
+  // Only what the reporter's form applied or tia applied can go. A label from anyone else is a decision.
+  const removable = replaced.filter((label) => has(label) && (context.reporterLabels.has(label) || !context.humanLabels.has(label)));
+  patch.removeLabels = [...removable, ...(decided ? context.intakeLabels : [])];
 
   return { answers, patch, next, type, report };
 }
