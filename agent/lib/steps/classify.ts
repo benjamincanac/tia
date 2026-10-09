@@ -1,4 +1,4 @@
-import { isEnabled, upstreamLabel } from "../../config";
+import { BOT_NAME, isEnabled, upstreamLabel } from "../../config";
 import {
   classifyQuestions,
   areaQuestionId,
@@ -42,8 +42,8 @@ export function issueState(context: TriageContext, maxComments?: number) {
         !(context.reporterLabels.has(label) && (isManagedLabel(label) || isKindLabel(context, label))) &&
         !(label === "needs reproduction" && !context.humanLabels.has(label)),
     ),
-    // A bot's comment is no more evidence than the label: a stale notice, or the request itself.
-    comments: clipComments(issue.comments.filter((comment) => comment.authorType !== "Bot"), maxComments).map((comment) => ({
+    // Its own comments are no more evidence than the label. Another bot's may hold a link.
+    comments: clipComments(issue.comments.filter((comment) => comment.author !== `${BOT_NAME}[bot]`), maxComments).map((comment) => ({
       author: comment.author,
       authorAssociation: comment.authorAssociation,
       isReporter: comment.author === issue.author,

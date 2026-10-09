@@ -3,6 +3,9 @@ import { z } from "zod";
 
 export const CONFIG_PATH = ".github/tia.yml";
 
+// The GitHub App slug. `@tia` belongs to a GitHub user, so mentioning it would ping a stranger.
+export const BOT_NAME = "hey-tia";
+
 export const DECISIONS = [
   "type",
   "question",

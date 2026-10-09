@@ -16,7 +16,7 @@ export const classifyQuestions = {
   has_reproduction: {
     type: "boolean",
     instructions:
-      "Does the issue give a maintainer what they need to reproduce the problem without asking the reporter anything? A link is enough on its own: a StackBlitz, CodeSandbox, repository or playground, or a page of the project's own documentation or site that shows it. Written steps count just as much when they name the component or command and include the code, configuration or commands that trigger the problem, even without a link. The code has to run as pasted: a snippet that is unformatted, uses data or components it never defines, or needs guessing to complete does not count. Neither does only a screenshot, only a description of the symptom, or a snippet that leaves out what triggers the problem.",
+      "Does the issue give a maintainer what they need to reproduce the problem without asking the reporter anything? A link is enough on its own: a StackBlitz, CodeSandbox, repository or playground, or a page of the project's own documentation or site that shows it. Written steps count just as much when they name the component or command and include the code, configuration or commands that trigger the problem, even without a link. The code has to run as pasted: a snippet that uses data or components it never defines, or needs guessing to complete does not count. Neither does only a screenshot, only a description of the symptom, or a snippet that leaves out what triggers the problem.",
   },
   is_answered: {
     type: "boolean",
