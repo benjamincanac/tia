@@ -202,9 +202,10 @@ export async function classify(context: TriageContext, signal?: AbortSignal): Pr
     // The reporter answered the request to confirm a fix and did not confirm it. The label stays, or the same
     // release would be proposed again, and the maintainers are told once: whether it is fixed is theirs to say.
     const asked = issue.comments.findLastIndex((comment) => comment.author === `${BOT_NAME}[bot]`);
-    const answered = asked >= 0 && issue.comments.some((comment, index) => index > asked && comment.author === issue.author);
-    if (!resolved && has("needs verification") && answered && !(await isMarked(issue, "verification-disputed"))) {
-      const disputed = await ask(verificationQuestions, issueState(context), signal);
+    const replies = asked >= 0 ? issue.comments.filter((comment, index) => index > asked && comment.author === issue.author) : [];
+    if (!resolved && has("needs verification") && replies.length > 0 && !(await isMarked(issue, "verification-disputed"))) {
+      // Only what the reporter wrote after the request. Before it, "still happens" is the report itself.
+      const disputed = await ask(verificationQuestions, { title: issue.title, comments: clipComments(replies).map((comment) => ({ body: comment.body })) }, signal);
       verification = disputed;
       if (disputed.still_happens.probability >= t.labels) {
         mentions.push({ template: "not_fixed", detail: summary.trim() });

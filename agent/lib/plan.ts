@@ -120,7 +120,8 @@ export function mergePlan(plan: TriagePlan, step: string, patch: PlanPatch): Tri
     skipped: patch.skipped ?? plan.skipped,
     retest: drop ? null : (patch.retest ?? plan.retest ?? null),
     keepLabels,
-    once: unique([...(plan.once ?? []), ...(patch.once ?? [])]),
+    // A retest that is not asked must stay askable.
+    once: unique([...(plan.once ?? []), ...(patch.once ?? [])]).filter((marker) => !drop || marker !== "retest-on-latest"),
     type: patch.type ?? plan.type,
     steps: unique([...plan.steps, step]),
   };
