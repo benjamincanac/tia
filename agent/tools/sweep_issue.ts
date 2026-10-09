@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { isEnabled } from "../config";
 import { skipReason } from "../lib/context";
-import { staleQuestions } from "../lib/jev/questions";
+import { hasReproductionQuestions, staleQuestions } from "../lib/jev/questions";
 import { getTimeline, listReleases } from "../lib/github";
 import { ask, clip } from "../lib/jev";
 import { updatePlan, type PlanPatch } from "../lib/plan";
@@ -20,7 +20,7 @@ function daysSince(date: string | undefined): number {
 
 export default defineTool({
   description:
-    "Daily sweep step for one issue. Applies the time based rules: follow up once on `needs reproduction`, mention maintainers when it stays idle, mention them when a `needs verification` issue gets no confirmation, and ask Jev whether a long idle issue that was never triaged is still relevant. On a release pass it only re-checks whether the issue is fixed. Returns the tools to call next.",
+    "Daily sweep step for one issue. Applies the time based rules: follow up once on `needs reproduction` when Jev still finds none, mention maintainers when it stays idle, mention them when a `needs verification` issue gets no confirmation, and ask Jev whether a long idle issue that was never triaged is still relevant. On a release pass it only re-checks whether the issue is fixed. Returns the tools to call next.",
   inputSchema: issueInput.extend({
     release: z.boolean().default(false).describe("True on a release pass, which re-checks the fix and nothing else."),
   }),
@@ -59,10 +59,18 @@ export default defineTool({
       const since = labeledAt("needs reproduction");
       const age = daysSince(since);
       if (reporterReplied(since)) next = ["classify_issue"];
-      else if (age >= mentionDays && (await once("reproduction-mention"))) {
-        patch = { mentions: [{ template: "needs_reproduction_idle", detail: `No reproduction after ${Math.floor(age)} days.` }] };
-      } else if (age >= followUpDays && age < mentionDays && (await once("reproduction-follow-up"))) {
-        patch = { facts: ["Friendly follow-up: a reproduction is still needed to look into this. Ask for it in one short sentence."] };
+      else if (age >= followUpDays) {
+        // Nobody is asked twice on an old answer. The request may have been wrong, or someone other than the reporter may have answered it.
+        const result = await ask(hasReproductionQuestions(), issueState(context), ctx.abortSignal);
+        answers = result;
+        if (result.has_reproduction.probability >= config.thresholds.has_reproduction) next = ["classify_issue"];
+        else if (age >= mentionDays) {
+          if (await once("reproduction-mention")) {
+            patch = { mentions: [{ template: "needs_reproduction_idle", detail: `No reproduction after ${Math.floor(age)} days.` }] };
+          }
+        } else if (await once("reproduction-follow-up")) {
+          patch = { facts: ["Friendly follow-up: a reproduction is still needed to look into this. Ask for it in one short sentence. Nothing is appended to it."] };
+        }
       }
     } else if (issue.labels.includes("needs verification")) {
       const since = labeledAt("needs verification");

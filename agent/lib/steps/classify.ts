@@ -1,4 +1,4 @@
-import { isEnabled, upstreamLabel } from "../../config";
+import { BOT_NAME, isEnabled, upstreamLabel } from "../../config";
 import {
   classifyQuestions,
   areaQuestionId,
@@ -36,10 +36,14 @@ export function issueState(context: TriageContext, maxComments?: number) {
     body: clipBody(issue.body),
     authorAssociation: issue.authorAssociation,
     // What the reporter's form applied is a claim the questions are here to check: one of tia's labels, or the label of a kind. Shown as a fact, it tilts the answers toward itself.
+    // tia's own request is its earlier answer, not evidence. Shown again, it lowers the answer on the very reproduction it asked for.
     existingLabels: issue.labels.filter(
-      (label) => !(context.reporterLabels.has(label) && (isManagedLabel(label) || isKindLabel(context, label))),
+      (label) =>
+        !(context.reporterLabels.has(label) && (isManagedLabel(label) || isKindLabel(context, label))) &&
+        !(label === "needs reproduction" && !context.humanLabels.has(label)),
     ),
-    comments: clipComments(issue.comments, maxComments).map((comment) => ({
+    // Its own comments are no more evidence than the label. Another bot's may hold a link.
+    comments: clipComments(issue.comments.filter((comment) => comment.author !== `${BOT_NAME}[bot]`), maxComments).map((comment) => ({
       author: comment.author,
       authorAssociation: comment.authorAssociation,
       isReporter: comment.author === issue.author,
