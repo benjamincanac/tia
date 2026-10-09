@@ -9,7 +9,7 @@ import {
 } from "../jev/questions";
 import { kindOf, sectionOf } from "../issue-forms";
 import type { TriageContext } from "../context";
-import { ask, choiceConfidence, clipBody, clipComments } from "../jev";
+import { ask, choiceConfidence, clip, clipBody, clipComments } from "../jev";
 import { isManagedLabel } from "../labels";
 import type { PlanPatch } from "../plan";
 import { isMarked } from "../store";
@@ -204,8 +204,12 @@ export async function classify(context: TriageContext, signal?: AbortSignal): Pr
     const asked = issue.comments.findLastIndex((comment) => comment.author === `${BOT_NAME}[bot]`);
     const replies = asked >= 0 ? issue.comments.filter((comment, index) => index > asked && comment.author === issue.author) : [];
     if (!resolved && has("needs verification") && replies.length > 0 && !(await isMarked(issue, "verification-disputed"))) {
-      // Only what the reporter wrote after the request. Before it, "still happens" is the report itself.
-      const disputed = await ask(verificationQuestions, { title: issue.title, comments: clipComments(replies).map((comment) => ({ body: comment.body })) }, signal);
+      // Only the request, which names the release, and what the reporter wrote after it. Before it, "still happens" is the report itself.
+      const disputed = await ask(
+        verificationQuestions,
+        { title: issue.title, request: clip(issue.comments[asked]?.body ?? "", 1_500), replies: clipComments(replies).map((comment) => comment.body) },
+        signal,
+      );
       verification = disputed;
       if (disputed.still_happens.probability >= t.labels) {
         mentions.push({ template: "not_fixed", detail: summary.trim() });

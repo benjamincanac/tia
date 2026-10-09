@@ -56,9 +56,10 @@ export default defineTool({
     if (release) {
       if (releaseCheckApplies(config, issue, context.kinds, await getClassified(ref))) next = ["check_fixed_in_release"];
     } else if (issue.labels.includes("needs reproduction")) {
+      const since = labeledAt(timeline, "needs reproduction");
       // Counted like the sweep that queued the issue: from `updatedAt` when the timeline does not show the label.
-      const since = labeledAt(timeline, "needs reproduction") ?? issue.updatedAt;
-      const age = daysSince(since);
+      // A reply is still read against the label alone, since the reply itself moves `updatedAt`.
+      const age = daysSince(since ?? issue.updatedAt);
       // A reporter who answered is not asked again, and what they said is classified. The maintainers are still told when no reproduction came of it.
       const replied = reporterReplied(since);
       if (replied) next = ["classify_issue"];
@@ -79,9 +80,9 @@ export default defineTool({
         }
       }
     } else if (issue.labels.includes("needs verification")) {
-      const since = labeledAt(timeline, "needs verification") ?? issue.updatedAt;
+      const since = labeledAt(timeline, "needs verification");
       if (reporterReplied(since)) next = ["classify_issue"];
-      else if (daysSince(since) >= followUpDays && (await pending("verification-mention"))) {
+      else if (daysSince(since ?? issue.updatedAt) >= followUpDays && (await pending("verification-mention"))) {
         const evidence = issue.comments.findLast((comment) => comment.authorType === "Bot")?.body ?? "";
         patch = { mentions: [{ template: "verify_fixed", detail: clip(evidence.split("\n")[0] ?? "", 200) }], once: ["verification-mention"] };
       }

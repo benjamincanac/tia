@@ -42,6 +42,7 @@ export default defineTool({
       dryRun: context.dryRun,
       runId: runId(ctx),
     });
-    return { hasReproduction, next: hasReproduction ? ["classify_issue"] : [] };
+    // An issue can wait for both. Without a reproduction the comment may still answer the confirmation.
+    return { hasReproduction, next: hasReproduction || context.issue.labels.includes("needs verification") ? ["classify_issue"] : [] };
   },
 });
