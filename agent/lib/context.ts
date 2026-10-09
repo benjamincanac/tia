@@ -195,6 +195,9 @@ function isMaintainer(config: RepoConfig, login: string): boolean {
 
 const HOUR_MS = 60 * 60_000;
 
+/** The one skip that passes with time. The others hold for as long as the issue stays what it is. */
+export const RECENT_ACTIVITY = "a human labeled or commented in the last hour";
+
 /** Reason to leave the issue alone, or `null`. `force` is an explicit @-mention and skips the activity guard. */
 export function skipReason(context: TriageContext, force: boolean): string | null {
   const { issue, config } = context;
@@ -206,7 +209,7 @@ export function skipReason(context: TriageContext, force: boolean): string | nul
   if (issue.author.toLowerCase().startsWith("renovate")) return "authored by renovate";
   if (context.pinned) return "pinned";
   if (!force && context.lastHumanActivity && Date.now() - context.lastHumanActivity < HOUR_MS) {
-    return "a human labeled or commented in the last hour";
+    return RECENT_ACTIVITY;
   }
   return null;
 }

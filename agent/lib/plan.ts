@@ -9,6 +9,7 @@ export const MENTION_TEMPLATES = {
   verify_fixed: "this looks fixed in a release but the reporter has not confirmed.",
   upstream_closed: "the linked upstream issue was closed, worth a retest or a dependency bump.",
   needs_reproduction_idle: "still no reproduction after the follow-up.",
+  not_fixed: "the reporter says this still happens on the release that should fix it.",
   stale: "this looks obsolete.",
   security: "this looks like a publicly disclosed security report and needs your attention now.",
 } as const;
@@ -43,6 +44,8 @@ export interface TriagePlan {
   retest?: RetestRequest | null;
   /** Labels no step may remove, whatever an earlier step planned. */
   keepLabels?: string[];
+  /** Once-only markers of what this run asks for. Set when the plan is written, so a request that was never posted is planned again. */
+  once?: string[];
   /** Issue Type after classification, existing or proposed. */
   type: string | null;
   steps: string[];
@@ -70,6 +73,7 @@ export function emptyPlan(issue: IssueRef, runId: string, dryRun: boolean): Tria
     skipped: null,
     retest: null,
     keepLabels: [],
+    once: [],
     type: null,
     steps: [],
   };
@@ -88,6 +92,7 @@ export interface PlanPatch {
   type?: string;
   retest?: RetestRequest;
   keepLabels?: string[];
+  once?: string[];
   /** A duplicate needs no reproduction: drops the planned `needs reproduction`, its request and a retest request. */
   supersedesReproduction?: boolean;
 }
@@ -115,6 +120,7 @@ export function mergePlan(plan: TriagePlan, step: string, patch: PlanPatch): Tri
     skipped: patch.skipped ?? plan.skipped,
     retest: drop ? null : (patch.retest ?? plan.retest ?? null),
     keepLabels,
+    once: unique([...(plan.once ?? []), ...(patch.once ?? [])]),
     type: patch.type ?? plan.type,
     steps: unique([...plan.steps, step]),
   };
@@ -127,10 +133,17 @@ export async function updatePlan(
   step: string,
   patch: PlanPatch,
 ): Promise<TriagePlan> {
-  const current = (await getPlan(issue)) ?? emptyPlan(issue, runId, dryRun);
+  const stored = await getPlan(issue);
+  // `dispatch` clears the plan before a run. A run that starts without it, from a Discord conversation, must not build on the plan of another session.
+  const current = stored && sessionOf(stored.runId) === sessionOf(runId) ? stored : emptyPlan(issue, runId, dryRun);
   const next = mergePlan(current, step, patch);
   await savePlan(runId, next);
   return next;
+}
+
+/** A run id is `<session>:<turn>`, see `runId` in lib/tool.ts. */
+export function sessionOf(runId: string): string {
+  return runId.slice(0, runId.lastIndexOf(":"));
 }
 
 export function hasWrites(plan: TriagePlan): boolean {

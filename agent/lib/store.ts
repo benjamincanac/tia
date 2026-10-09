@@ -55,6 +55,7 @@ interface KeyValue {
   set(key: string, value: unknown, ttlSeconds?: number): Promise<void>;
   del(key: string): Promise<void>;
   rpush(key: string, value: unknown): Promise<void>;
+  lpush(key: string, value: unknown): Promise<void>;
   ltrim(key: string, start: number, stop: number): Promise<void>;
   lrange<T>(key: string, start: number, stop: number): Promise<T[]>;
   lpop<T>(key: string): Promise<T | null>;
@@ -76,6 +77,9 @@ function redisStore(redis: Redis): KeyValue {
     },
     async rpush(key, value) {
       await redis.rpush(key, value);
+    },
+    async lpush(key, value) {
+      await redis.lpush(key, value);
     },
     async ltrim(key, start, stop) {
       await redis.ltrim(key, start, stop);
@@ -128,6 +132,9 @@ function memoryStore(): KeyValue {
     },
     async rpush(key, value) {
       lists.set(key, [...(lists.get(key) ?? []), value]);
+    },
+    async lpush(key, value) {
+      lists.set(key, [value, ...(lists.get(key) ?? [])]);
     },
     async lrange<T>(key: string, start: number, stop: number) {
       const list = lists.get(key) ?? [];
@@ -252,10 +259,14 @@ export async function listUpstreamPairs(): Promise<UpstreamPair[]> {
 
 /** Follow-ups and mentions are sent once. The marker is the memory of having sent them. */
 export async function markOnce(ref: IssueRef, marker: string): Promise<boolean> {
-  const key = `tia:once:${issueKey(ref)}:${marker}`;
-  if (await kv().get<number>(key)) return false;
-  await kv().set(key, Date.now(), YEAR_SECONDS);
+  if (await isMarked(ref, marker)) return false;
+  await kv().set(`tia:once:${issueKey(ref)}:${marker}`, Date.now(), YEAR_SECONDS);
   return true;
+}
+
+/** Read by the step that plans a once-only request. `applyPlan` sets the marker when the request is written. */
+export async function isMarked(ref: IssueRef, marker: string): Promise<boolean> {
+  return (await kv().get<number>(`tia:once:${issueKey(ref)}:${marker}`)) !== null;
 }
 
 /** Set by the ops trigger so an explicit run on a preview deployment may write for one hour. */
@@ -315,6 +326,11 @@ export function markEvaluated(ref: IssueRef, fingerprint: string): Promise<void>
   return kv().set(`tia:evaluated:${issueKey(ref)}`, fingerprint, YEAR_SECONDS);
 }
 
+/** A queued run that never started was not evaluated. The next sweep queues the issue again. */
+export function clearEvaluated(ref: IssueRef): Promise<void> {
+  return kv().del(`tia:evaluated:${issueKey(ref)}`);
+}
+
 export type RepoPass = "setup" | "sweep";
 
 /**
@@ -353,8 +369,13 @@ export async function forgetRepo(repo: string): Promise<number> {
   return keys.length + queued.length - kept.length;
 }
 
+/**
+ * An event someone waits on goes to the front. A scheduled pass or a run that is not due yet goes
+ * to the back, so a sweep spread over an hour does not hold a new issue behind it.
+ */
 export function enqueue(item: QueueItem): Promise<void> {
-  return kv().rpush(QUEUE_KEY, item);
+  const scheduled = item.reason === "sweep" || item.reason === "release" || item.notBefore > Date.now();
+  return scheduled ? kv().rpush(QUEUE_KEY, item) : kv().lpush(QUEUE_KEY, item);
 }
 
 export async function drainQueue(limit: number): Promise<QueueItem[]> {

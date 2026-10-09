@@ -5,7 +5,7 @@ import { addComment, addLabels, ensureLabel, removeLabel, setIssueType } from ".
 import type { IssueKind, ReproductionSettings } from "./issue-forms";
 import { isManagedLabel, labelStyle } from "./labels";
 import { MENTION_TEMPLATES, type RetestRequest, type TriagePlan } from "./plan";
-import { getLastAnnounced, isPreviewWriteAllowed, recordDecision, setLastAnnounced } from "./store";
+import { getLastAnnounced, isPreviewWriteAllowed, markOnce, recordDecision, setLastAnnounced } from "./store";
 
 export const MAX_COMMENT_WORDS = 80;
 
@@ -167,6 +167,7 @@ export async function applyPlan(
       actions.commentUrl = await addComment(plan.issue, actions.comment);
       await setLastAnnounced(plan.issue, fingerprint);
     }
+    for (const marker of plan.once ?? []) await markOnce(plan.issue, marker);
   } else {
     console.log(`[tia] ${plan.dryRun ? "dry-run" : "blocked"} ${plan.issue.owner}/${plan.issue.repo}#${plan.issue.issueNumber}`, JSON.stringify(actions));
   }
