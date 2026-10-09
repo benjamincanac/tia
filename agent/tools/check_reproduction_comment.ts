@@ -9,14 +9,17 @@ import { issueInput, requireContext, runId } from "../lib/tool";
 
 export default defineTool({
   description:
-    "Call when a new comment lands on an issue labeled `needs reproduction`. Asks Jev whether that comment provides a reproduction. When it does, plans the label removal and a thank you, and tells you to run the pipeline again from classify_issue.",
+    "Call when the reporter comments on an issue that waits for them. On an issue labeled `needs reproduction` it asks Jev whether that comment provides a reproduction, and when it does, plans the label removal and a thank you. Returns classify_issue in `next` when the pipeline has to run again.",
   inputSchema: issueInput.extend({ commentId: z.number().int().positive() }),
   label: { start: ({ owner, repo, issueNumber }) => `Check new comment on ${owner}/${repo}#${issueNumber}` },
   async execute({ commentId, ...ref }, ctx) {
     const context = await requireContext(ref, ctx.abortSignal);
     const comment = context.issue.comments.find((candidate) => candidate.id === commentId);
     if (!comment) throw new Error(`Comment ${commentId} not found on the issue.`);
-    if (!context.issue.labels.includes("needs reproduction")) return { hasReproduction: false, next: [] as string[] };
+    // An issue that waits for a confirmation has no reproduction to look for. What the reporter answered is classified.
+    if (!context.issue.labels.includes("needs reproduction")) {
+      return { hasReproduction: false, next: context.issue.labels.includes("needs verification") ? ["classify_issue"] : [] };
+    }
 
     const answers = await ask(
       hasReproductionQuestions(),
@@ -39,6 +42,7 @@ export default defineTool({
       dryRun: context.dryRun,
       runId: runId(ctx),
     });
-    return { hasReproduction, next: hasReproduction ? ["classify_issue"] : [] };
+    // An issue can wait for both. Without a reproduction the comment may still answer the confirmation.
+    return { hasReproduction, next: hasReproduction || context.issue.labels.includes("needs verification") ? ["classify_issue"] : [] };
   },
 });

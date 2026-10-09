@@ -1,5 +1,5 @@
 import { isEnabled, type RepoConfig } from "../config";
-import { listOpenIssues, listReleases, loadRepoConfig, type Issue } from "./github";
+import { getTimeline, listOpenIssues, listReleases, loadRepoConfig, type Issue, type TimelineEvent } from "./github";
 import { kindOf, loadIntakeLabels, loadIssueKinds, type IssueKind } from "./issue-forms";
 import { openSetupPullRequest } from "./setup";
 import { closedUpstreamPairs } from "./steps/upstream";
@@ -29,10 +29,22 @@ export function releaseCheckApplies(
   return classified?.releaseCheck ?? kindOf(issue, kinds)?.report === true;
 }
 
-function thresholdsCrossed(issue: Issue, config: RepoConfig): number {
-  const idleDays = (Date.now() - Date.parse(issue.updatedAt)) / DAY_MS;
+/** When the label was last applied. A wait is counted from there. */
+export function labeledAt(timeline: readonly TimelineEvent[], label: string): string | undefined {
+  return timeline.findLast((event) => event.event === "labeled" && event.label?.name === label)?.created_at;
+}
+
+/**
+ * An issue that waits on someone is measured from its label, the clock `sweep_issue` applies its
+ * rules on. `updatedAt` moves with every comment, so one from a bystander would push the follow-up back.
+ * A timeline that cannot be read must not stop the sweep of the repository, so it counts from `updatedAt` too.
+ */
+async function thresholdsCrossed(issue: Issue, config: RepoConfig): Promise<number> {
+  const waiting = SWEEP_LABELS.find((label) => issue.labels.includes(label));
+  const since = (waiting && labeledAt(await getTimeline(issue).catch(() => []), waiting)) || issue.updatedAt;
+  const days = (Date.now() - Date.parse(since)) / DAY_MS;
   const { followUpDays, mentionDays, staleDays } = config.sweep;
-  return [followUpDays, mentionDays, staleDays].filter((days) => idleDays >= days).length;
+  return [followUpDays, mentionDays, staleDays].filter((threshold) => days >= threshold).length;
 }
 
 export interface SweepSummary {
@@ -90,7 +102,7 @@ export async function sweepRepo(config: RepoConfig, options: { limit?: number; e
     }
     // The release is deliberately not part of the fingerprint. It changes whether the issue is
     // fixed, nothing about the issue itself, so a publish must not re-triage the whole backlog.
-    const fingerprint = `${issue.updatedAt}:${thresholdsCrossed(issue, config)}`;
+    const fingerprint = `${issue.updatedAt}:${await thresholdsCrossed(issue, config)}`;
     const changed = !(await alreadyEvaluated(issue, fingerprint));
     // An unchanged issue is only worth a session when the release could have fixed it.
     if (!changed && !(newRelease && releaseCheckApplies(config, issue, kinds, await getClassified(issue)))) {

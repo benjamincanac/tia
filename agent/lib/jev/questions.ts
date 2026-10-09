@@ -103,6 +103,14 @@ export function hasReproductionQuestions() {
   return { has_reproduction: classifyQuestions.has_reproduction } as const;
 }
 
+/** Asked when the reporter answers a request to confirm a fix and the thread is not resolved. */
+export const verificationQuestions = {
+  still_happens: {
+    type: "boolean",
+    instructions: `The reporter was asked to confirm that a release fixes the problem. Do they say it still happens on that release or a later one? False when they confirm the fix, have not tried it yet, or only ask something. ${GUARD}`,
+  },
+} as const satisfies Record<string, Question>;
+
 export function duplicateQuestions(candidates: readonly { number: number; title: string; state: string }[]) {
   const criteria: Record<string, string> = {
     none: "None of the candidates describes the same underlying problem or request.",

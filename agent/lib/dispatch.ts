@@ -6,7 +6,7 @@ import github from "../channels/github";
 import { requireApproval, type RepoConfig } from "../config";
 import { loadRepoConfig, repositoryId } from "./github";
 import { ask, clip } from "./jev";
-import { allowPreviewWrite, clearPlan, drainQueue, enqueue, forceDryRun, markOnce, type QueueItem, type QueueReason } from "./store";
+import { allowPreviewWrite, clearEvaluated, clearPlan, drainQueue, enqueue, forceDryRun, markOnce, type QueueItem, type QueueReason } from "./store";
 
 type Auth = Parameters<ReturnType<ScheduleToFn>["send"]>[1]["auth"];
 
@@ -36,7 +36,7 @@ export function triagePrompt(item: QueueItem, config: RepoConfig, triageRequeste
   const tail = `Load the triage skill and follow it. ${mode}`.trim();
   switch (item.reason) {
     case "comment":
-      return `A new comment (id ${item.commentId ?? 0}) landed on ${target(item)}, which waits for a reproduction or a confirmation. Start with check_reproduction_comment when the issue is labeled needs reproduction, otherwise with classify_issue (${ref}). ${tail}`;
+      return `A new comment (id ${item.commentId ?? 0}) landed on ${target(item)}, which waits for a reproduction or a confirmation. Start with check_reproduction_comment (${ref}, commentId ${item.commentId ?? 0}). ${tail}`;
     case "mention":
       return triageRequested
         ? `You were @-mentioned on ${target(item)} with a request to triage it again. Start with classify_issue (${ref}, force true). ${tail}`
@@ -96,8 +96,9 @@ export async function drainAndDispatch(to: ScheduleToFn, auth: Auth, limit: numb
     } catch (error) {
       const attempts = (item.attempts ?? 0) + 1;
       if (attempts >= MAX_DISPATCH_ATTEMPTS) {
-        // A deleted issue or a removed config fails forever. The daily sweep re-queues what still matters.
+        // A deleted issue fails forever. Anything else is forgotten as evaluated, so the daily sweep queues it again.
         console.error(`[tia] dispatch failed ${attempts} times for ${target(item)}, dropped`, error);
+        await clearEvaluated(item).catch(() => undefined);
         continue;
       }
       console.error(`[tia] dispatch failed for ${target(item)}, attempt ${attempts}`, error);

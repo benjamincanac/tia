@@ -5,13 +5,14 @@ import {
   areaQuestions,
   kindQuestion,
   upstreamQuestion,
+  verificationQuestions,
 } from "../jev/questions";
 import { kindOf, sectionOf } from "../issue-forms";
 import type { TriageContext } from "../context";
-import { ask, choiceConfidence, clipBody, clipComments } from "../jev";
+import { ask, choiceConfidence, clip, clipBody, clipComments } from "../jev";
 import { isManagedLabel } from "../labels";
 import type { PlanPatch } from "../plan";
-import { markOnce } from "../store";
+import { isMarked } from "../store";
 
 export type NextStep =
   | "validate_reproduction"
@@ -83,10 +84,12 @@ export async function classify(context: TriageContext, signal?: AbortSignal): Pr
   const kind = (claimed ? (replacement ?? marked) : (marked ?? chosen)) ?? null;
   const type = kind?.type ?? kind?.name ?? issue.type;
   const report = kind?.report === true;
-  const patch: PlanPatch = { addLabels: [], removeLabels: [], facts: [], mentions: [] };
+  const patch: PlanPatch = { addLabels: [], removeLabels: [], facts: [], mentions: [], once: [] };
   const labels = patch.addLabels ?? [];
   const facts = patch.facts ?? [];
   const mentions = patch.mentions ?? [];
+  const once = patch.once ?? [];
+  let verification: Record<string, unknown> = {};
   const replaced: string[] = [];
   const next: NextStep[] = [];
   let decided = false;
@@ -181,8 +184,10 @@ export async function classify(context: TriageContext, signal?: AbortSignal): Pr
     const versionHeading = context.reproduction.versionHeading;
     const reported = sectionOf(issue.body, versionHeading)?.match(/\d+\.\d+(?:\.\d+)?(?:-[\w.]+)?/)?.[0] ?? null;
     if (!resolved && kind?.report && isEnabled(config, "reproduction") && versionHeading && !reported) {
-      const first = context.dryRun ? true : await markOnce(issue, "version-request");
-      if (first) facts.push(`Ask which version of ${config.package?.name ?? "the project"} they are using.`);
+      if (!(await isMarked(issue, "version-request"))) {
+        facts.push(`Ask which version of ${config.package?.name ?? "the project"} they are using.`);
+        once.push("version-request");
+      }
     }
 
     // Not a decision either: a regression is urgent, not triaged. The maintainers are told now, and the issue stays where it is.
@@ -193,6 +198,23 @@ export async function classify(context: TriageContext, signal?: AbortSignal): Pr
 
     if (!resolved && !waitsForReproduction && isEnabled(config, "fixed") && kind?.report && !has("needs verification")) {
       next.push("check_fixed_in_release");
+    }
+    // The reporter answered the request to confirm a fix and did not confirm it. The label stays, or the same
+    // release would be proposed again, and the maintainers are told once: whether it is fixed is theirs to say.
+    const asked = issue.comments.findLastIndex((comment) => comment.author === `${BOT_NAME}[bot]`);
+    const replies = asked >= 0 ? issue.comments.filter((comment, index) => index > asked && comment.author === issue.author) : [];
+    if (!resolved && has("needs verification") && replies.length > 0 && !(await isMarked(issue, "verification-disputed"))) {
+      // Only the request, which names the release, and what the reporter wrote after it. Before it, "still happens" is the report itself.
+      const disputed = await ask(
+        verificationQuestions,
+        { title: issue.title, request: clip(issue.comments[asked]?.body ?? "", 1_500), replies: clipComments(replies).map((comment) => comment.body) },
+        signal,
+      );
+      verification = disputed;
+      if (disputed.still_happens.probability >= t.labels) {
+        mentions.push({ template: "not_fixed", detail: summary.trim() });
+        once.push("verification-disputed");
+      }
     }
     // Still checked without a reproduction: a confident duplicate replaces the request, see `supersedesReproduction`.
     if (!resolved && isEnabled(config, "duplicate") && !has("duplicate")) next.push("check_duplicate");
@@ -220,5 +242,5 @@ export async function classify(context: TriageContext, signal?: AbortSignal): Pr
   const removable = replaced.filter((label) => has(label) && (context.reporterLabels.has(label) || !context.humanLabels.has(label)));
   patch.removeLabels = [...removable, ...(decided ? context.intakeLabels : [])];
 
-  return { answers, patch, next, type, report };
+  return { answers: { ...answers, ...verification }, patch, next, type, report };
 }

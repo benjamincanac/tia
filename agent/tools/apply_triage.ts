@@ -3,8 +3,8 @@ import { z } from "zod";
 
 import { applyPlan, commentProblem, MAX_COMMENT_WORDS, reporterText } from "../lib/apply";
 import { skipReason } from "../lib/context";
-import { emptyPlan, hasWrites } from "../lib/plan";
-import { getPlan } from "../lib/store";
+import { emptyPlan, hasWrites, sessionOf } from "../lib/plan";
+import { getPlan, isTriageRun } from "../lib/store";
 import { issueInput, requireContext, runId, writeApproval } from "../lib/tool";
 
 export default defineTool({
@@ -22,6 +22,10 @@ export default defineTool({
   async execute({ comment: written, ...ref }, ctx) {
     const context = await requireContext(ref, ctx.abortSignal);
     const recorded = await getPlan(ref);
+    // An approval can be answered after a newer run replaced the plan, or after the plan expired.
+    // What the maintainer was shown is gone, so nothing is written in its name.
+    const replaced = recorded ? sessionOf(recorded.runId) !== ctx.session.id : await isTriageRun(runId(ctx));
+    if (replaced) return { applied: false, reason: "The plan of this run was replaced by a newer run on the issue. Nothing was written." };
     const comment = reporterText(recorded, written);
     // Without a plan no tool evaluated the skip rules for this run, so they are evaluated here.
     // The activity guard is off: this path answers an explicit @-mention.

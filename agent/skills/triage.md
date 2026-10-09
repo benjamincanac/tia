@@ -19,7 +19,7 @@ Start with the tool named in the turn.
 
 - New issue, manual triage or @-mention asking to triage: `classify_issue`. Pass `force: true` only for an explicit @-mention or a maintainer request.
 - Sweep or release pass: `sweep_issue`, with `release: true` when the turn says it is a release pass. It returns `next`. When `next` contains `classify_issue`, continue at step 2. When it names another tool, call that one and go to step 4. Otherwise go to step 4.
-- New comment on an issue that waits for a reproduction: `check_reproduction_comment`. When it returns `classify_issue` in `next`, continue at step 2. Otherwise stop without calling `apply_triage`.
+- New comment on an issue that waits for a reproduction or a confirmation: `check_reproduction_comment`. When it returns `classify_issue` in `next`, continue at step 2. Otherwise stop without calling `apply_triage`.
 
 ## 2. Classify
 

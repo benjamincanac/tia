@@ -2,9 +2,10 @@ import { z } from "zod";
 
 import type { RepoConfig } from "../../config";
 import type { TriageContext } from "../context";
+import { isBot } from "../github";
 import { sectionOf, type ReproductionSettings } from "../issue-forms";
 import type { PlanPatch } from "../plan";
-import { markOnce } from "../store";
+import { isMarked } from "../store";
 
 const LINK_PATTERN = /https?:\/\/[^\s)>\]"'`]+/gi;
 
@@ -128,23 +129,32 @@ export async function validateReproduction(context: TriageContext, signal?: Abor
   const latestVersion = fixture?.latestVersion ?? (config.package ? await latestPackageVersion(config.package.name, signal) : null);
   const links = extractReproductionLinks(text, config, settings);
   const valid = links.find((link) => !link.blankTemplate) ?? null;
+  // Someone else can reproduce a report the reporter could not. Their link is not the reporter's to be thanked for.
+  const helper = valid
+    ? null
+    : issue.comments.findLast(
+        (comment) =>
+          comment.author !== issue.author &&
+          !isBot(comment.author, comment.authorType) &&
+          extractReproductionLinks(comment.body, config, settings).some((link) => !link.blankTemplate),
+      );
   const patch: PlanPatch = {};
 
-  if (links.length > 0 && !valid) {
+  if (links.length > 0 && !valid && !helper) {
     patch.addLabels = issue.labels.includes("needs reproduction") ? [] : ["needs reproduction"];
     patch.facts = [`The reproduction is the unmodified starter template: ${links.map((link) => link.url).join(", ")}.`, "REPRODUCTION_REQUEST"];
   } else if (issue.labels.includes("needs reproduction")) {
     // The label was waiting for this. Written steps count as much as a link, so no link is not a reason to keep it.
     patch.removeLabels = ["needs reproduction"];
-    patch.facts = [`Thank @${issue.author} for the reproduction.`];
+    patch.facts = [`Thank @${helper?.author ?? issue.author} for the reproduction.`];
   }
   if (valid && valid.kind !== "playground" && reported && latestVersion && isBehind(reported, latestVersion)) {
     // Only a sandbox or a repository pins a version. The repository's own playground and docs run its current release.
     // Asked once. The sweep would otherwise repeat it on every run.
-    const first = context.dryRun ? true : await markOnce(issue, "retest-on-latest");
-    if (first && config.package) {
+    if (config.package && !(await isMarked(issue, "retest-on-latest"))) {
       patch.facts = [...(patch.facts ?? []), "RETEST_REQUEST"];
       patch.retest = { name: config.package.name, version: reported, latest: latestVersion };
+      patch.once = ["retest-on-latest"];
     }
   }
 
