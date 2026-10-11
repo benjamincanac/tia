@@ -226,15 +226,6 @@ export async function isTriageRun(runId: string): Promise<boolean> {
   return (await kv().get<boolean>(`tia:run:${runId}`)) === true;
 }
 
-/** A scheduled Discord run whose opening message became an approval prompt. The others leave no message behind. */
-export function markPrompted(messageId: string): Promise<void> {
-  return kv().set(`tia:prompted:${messageId}`, Date.now(), WEEK_SECONDS);
-}
-
-export async function wasPrompted(messageId: string): Promise<boolean> {
-  return (await kv().get<number>(`tia:prompted:${messageId}`)) !== null;
-}
-
 /**
  * Which GitHub App installation covers an account. Every webhook carries it, so installing the app
  * on a new account is enough: there is nothing to configure and nothing to redeploy.

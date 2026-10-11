@@ -14,10 +14,6 @@ function target(item: QueueItem): string {
   return `${item.owner}/${item.repo}#${item.issueNumber}`;
 }
 
-export function targetUrl(item: QueueItem): string {
-  return `https://github.com/${item.owner}/${item.repo}/issues/${item.issueNumber}`;
-}
-
 const mentionQuestions = {
   is_triage_request: {
     type: "boolean",
@@ -139,8 +135,8 @@ export async function dispatch(to: ScheduleToFn, auth: Auth, item: QueueItem): P
   const message = triagePrompt(item, config, triageRequested);
 
   if (needsApproval && approvals) {
-    const title = `Triage [${target(item)}](<${targetUrl(item)}>) (${item.reason})`;
-    await to(discord, { channelId: approvals, initialMessage: title }).send(message, { auth });
+    // The run posts nothing until it has a write to approve. A placeholder id gives it an address of its own until then.
+    await to(discord, { channelId: approvals, conversationId: `run-${crypto.randomUUID()}` }).send(message, { auth });
     return "discord";
   }
 

@@ -1,4 +1,4 @@
-import { defaultDiscordAuth, discordChannel, renderInputRequestComponents } from "eve/channels/discord";
+import { defaultDiscordAuth, discordChannel, discordContinuationToken, renderInputRequestComponents } from "eve/channels/discord";
 import { z } from "zod";
 
 import { env, requireApproval } from "../config";
@@ -6,7 +6,7 @@ import { buildComment, reporterText } from "../lib/apply";
 import { loadTriageContext } from "../lib/context";
 import { discordCredentials } from "../lib/discord";
 import { emptyPlan } from "../lib/plan";
-import { getPlan, markPrompted, wasPrompted } from "../lib/store";
+import { getPlan } from "../lib/store";
 
 function maintainerIds(): string[] {
   return (env("DISCORD_MAINTAINER_IDS") ?? "").split(",").map((id) => id.trim()).filter(Boolean);
@@ -73,19 +73,14 @@ export default discordChannel({
   events: {
     // A scheduled run speaks through its approval prompt alone. The prompt says what would be written
     // and its button what was decided, so the model's own summary is noise, and a run that asked
-    // nothing removes its opening message: a sweep would otherwise leave one per issue.
+    // nothing posts nothing: a sweep would otherwise notify once per issue.
     async "message.completed"(event, channel) {
       if (event.finishReason === "tool-calls") return;
-      const { channelId, conversationId, interactionToken } = channel.discord;
-      if (interactionToken || !conversationId) {
-        if (event.message) await channel.discord.post(event.message);
-        return;
-      }
-      if (await wasPrompted(conversationId)) return;
-      await channel.discord.request(`/channels/${channelId}/messages/${conversationId}`, {}, { botAuth: true, method: "DELETE" }).catch(() => undefined);
+      if (!channel.discord.interactionToken) return;
+      if (event.message) await channel.discord.post(event.message);
     },
     async "input.requested"(event, channel, ctx) {
-      const { channelId, conversationId, interactionToken } = channel.discord;
+      const { channelId, interactionToken } = channel.discord;
       let anchored = false;
       for (const request of event.requests) {
         const detail = request.action?.toolName === "apply_triage" ? await describeWrite(request.action.input, `${ctx.session.id}:${ctx.session.turn.id}`) : "";
@@ -94,14 +89,15 @@ export default discordChannel({
           components: renderInputRequestComponents(request),
           content: (detail ? `${detail}\n\n${request.prompt}` : request.prompt).slice(0, 1_900),
         };
-        // A run started from a schedule is anchored to the message that opened it. Discord sends the
-        // id of the message the button sits on, so buttons on any later message resolve to no session
-        // and the approval is dropped. The prompt replaces the opening message instead.
-        if (!anchored && !interactionToken && conversationId) {
-          // `request` takes plain JSON, and the rendered components are readonly.
-          const json = JSON.parse(JSON.stringify(body)) as Parameters<typeof channel.discord.request>[1];
-          await channel.discord.request(`/channels/${channelId}/messages/${conversationId}`, json, { botAuth: true, method: "PATCH" });
-          await markPrompted(conversationId);
+        // A run started from a schedule has posted nothing so far. Discord sends the id of the message
+        // the button sits on, so the session takes the prompt as its address, or the click would
+        // resolve to no session and the approval would be dropped.
+        if (!anchored && !interactionToken) {
+          const posted = await channel.discord.sendChannelMessage(body);
+          if (posted.id) {
+            channel.continuation?.alias(discordContinuationToken(channelId, posted.id));
+            channel.state.conversationId = posted.id;
+          }
           anchored = true;
           continue;
         }
@@ -109,12 +105,12 @@ export default discordChannel({
       }
     },
     // eve acknowledges a click and leaves the message as it is, so the buttons of an answered prompt
-    // stay clickable. The prompt sits on the opening message. Its buttons are replaced by the answer
-    // when the result shows there was a prompt, and cleared otherwise, which is harmless without one.
+    // stay clickable. They are replaced by the answer when the result shows there was a prompt, and
+    // cleared otherwise. A run that asked nothing still has its placeholder id and no message to edit.
     async "action.result"(event, channel) {
       const { channelId, conversationId, interactionToken } = channel.discord;
       if (event.result.kind !== "tool-result" || event.result.toolName !== "apply_triage") return;
-      if (interactionToken || !conversationId) return;
+      if (interactionToken || !/^\d+$/.test(conversationId)) return;
       const answer = event.status === "rejected" ? "Cancelled" : event.status === "completed" && wasApproved(event.result.output) ? "Approved" : null;
       const components = answer
         ? [{ type: 1, components: [{ type: 2, style: answer === "Approved" ? 3 : 2, label: answer, custom_id: "tia:answered", disabled: true }] }]
