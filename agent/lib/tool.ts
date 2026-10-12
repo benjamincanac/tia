@@ -1,7 +1,7 @@
-import type { ApprovalContext, ApprovalStatus } from "eve/tools/approval";
+import type { ApprovalContext, ApprovalResponseContext, ApprovalResponseDecision, ApprovalStatus } from "eve/tools/approval";
 import { z } from "zod";
 
-import { requireApproval } from "../config";
+import { isMaintainer, requireApproval } from "../config";
 import { commentProblem, reporterText } from "./apply";
 import { FIXTURE_OWNER, loadTriageContext, type TriageContext } from "./context";
 import { loadRepoConfig, type IssueRef } from "./github";
@@ -34,6 +34,17 @@ export async function refuseDuringTriage(ctx: { session: { id: string; turn: { i
   if (await isTriageRun(runId(ctx))) {
     throw new Error("Not available during a triage run. Follow the triage skill and finish with apply_triage.");
   }
+}
+
+/**
+ * eve only lets the requester answer an approval. A triage run is requested by the app, so nobody
+ * could. A maintainer pressing the button in Discord can.
+ */
+export function maintainerResponse<T>({ response }: ApprovalResponseContext<T>): ApprovalResponseDecision {
+  const { authenticator, attributes } = response.principal;
+  return authenticator === "discord-interaction" && isMaintainer(attributes.user_id)
+    ? { status: "allowed" }
+    : { status: "rejected", reason: "Only a maintainer can answer this approval." };
 }
 
 const approvalInput = issueInput.extend({ comment: z.string().default("") });

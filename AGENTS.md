@@ -31,7 +31,7 @@ Shared code goes in `agent/lib/`. eve warns about any other directory it does no
 
 ## eve
 
-Do not write eve code from memory. Its API is recent and differs from what you would guess: `evaluate` comes from `eve/ai`, eval judges are `t.judge(...)` on an evaluation model, approvals are `always`, `once`, `never` or a policy function, and the GitHub channel has no release or installation hook. The docs that match the installed version are in `node_modules/eve/docs`. Start with `node_modules/eve/docs/README.md`, which maps each task to its page, and check a type in `node_modules/eve/dist/src/public` when a page leaves a doubt.
+Do not write eve code from memory. Its API is recent and differs from what you would guess: `decide` comes from `eve/ai`, eval judges are `t.judge(...)` on a decision model, approvals are `always`, `once`, `never` or a policy function, and the GitHub channel has no release or installation hook. The docs that match the installed version are in `node_modules/eve/docs`. Start with `node_modules/eve/docs/README.md`, which maps each task to its page, and check a type in `node_modules/eve/dist/src/public` when a page leaves a doubt.
 
 ## Validate
 

@@ -1,4 +1,4 @@
-import type { Experimental_EvaluationQuestion as Question } from "ai";
+import type { Experimental_DecisionQuestion as Question } from "ai";
 
 import type { Area } from "../../config";
 import type { IssueKind } from "../issue-forms";

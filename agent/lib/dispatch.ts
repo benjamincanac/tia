@@ -1,4 +1,4 @@
-import type { Experimental_EvaluationQuestion as Question } from "ai";
+import type { Experimental_DecisionQuestion as Question } from "ai";
 import type { ScheduleToFn } from "eve/schedules";
 
 import discord from "../channels/discord";
