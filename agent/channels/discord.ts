@@ -1,16 +1,12 @@
 import { defaultDiscordAuth, discordChannel, discordContinuationToken, renderInputRequestComponents } from "eve/channels/discord";
 import { z } from "zod";
 
-import { env, requireApproval } from "../config";
+import { isMaintainer, requireApproval } from "../config";
 import { buildComment, reporterText } from "../lib/apply";
 import { loadTriageContext } from "../lib/context";
 import { discordCredentials } from "../lib/discord";
 import { emptyPlan } from "../lib/plan";
 import { getPlan } from "../lib/store";
-
-function maintainerIds(): string[] {
-  return (env("DISCORD_MAINTAINER_IDS") ?? "").split(",").map((id) => id.trim()).filter(Boolean);
-}
 
 const applyInput = z.object({ owner: z.string(), repo: z.string(), issueNumber: z.number(), comment: z.string() });
 
@@ -67,12 +63,12 @@ export default discordChannel({
   credentials: discordCredentials,
   onCommand(_ctx, interaction) {
     // The backlog conversation can trigger re-triage, so it is limited to maintainers.
-    if (!maintainerIds().includes(interaction.user.id)) return null;
+    if (!isMaintainer(interaction.user.id)) return null;
     return { auth: defaultDiscordAuth(interaction) };
   },
   // eve drops every press while `onCommand` is custom and this is not set. Same gate as `/ask`.
   onInputResponse(ctx, interaction) {
-    if (!maintainerIds().includes(interaction.user.id)) return null;
+    if (!isMaintainer(interaction.user.id)) return null;
     return { auth: ctx.defaultAuth };
   },
   events: {

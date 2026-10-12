@@ -5,7 +5,7 @@ import { applyPlan, commentProblem, MAX_COMMENT_WORDS, reporterText } from "../l
 import { skipReason } from "../lib/context";
 import { emptyPlan, hasWrites, sessionOf } from "../lib/plan";
 import { getPlan, isTriageRun } from "../lib/store";
-import { issueInput, requireContext, runId, writeApproval } from "../lib/tool";
+import { issueInput, maintainerResponse, requireContext, runId, writeApproval } from "../lib/tool";
 
 export default defineTool({
   description:
@@ -17,7 +17,7 @@ export default defineTool({
         `The comment for the reporter, in English, friendly maintainer tone, under ${MAX_COMMENT_WORDS} words, conveying the plan's facts and nothing else. Empty string when the plan has no facts. The reproduction request and the maintainer mention are appended automatically, do not write them.`,
       ),
   }),
-  approval: { request: writeApproval },
+  approval: { request: writeApproval, response: maintainerResponse },
   label: { start: ({ owner, repo, issueNumber }) => `Apply triage to ${owner}/${repo}#${issueNumber}` },
   async execute({ comment: written, ...ref }, ctx) {
     const context = await requireContext(ref, ctx.abortSignal);

@@ -224,6 +224,12 @@ export function isProduction(): boolean {
   return env("VERCEL_ENV") === "production";
 }
 
+/** Who can use `/ask` and answer an approval. */
+export function isMaintainer(userId: unknown): boolean {
+  const ids = (env("DISCORD_MAINTAINER_IDS") ?? "").split(",").map((id) => id.trim()).filter(Boolean);
+  return typeof userId === "string" && ids.includes(userId);
+}
+
 /** Write tools pause for a maintainer unless `TIA_REQUIRE_APPROVAL=false`. */
 export function requireApproval(): boolean {
   return env("TIA_REQUIRE_APPROVAL") !== "false";

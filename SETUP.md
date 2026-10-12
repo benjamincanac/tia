@@ -98,12 +98,12 @@ Turn on **Developer Mode** in Discord's advanced settings to copy ids. Send the 
 vercel env add DISCORD_APPROVALS_CHANNEL_ID production
 vercel env add DISCORD_DIGEST_CHANNEL_ID production
 
-# Your Discord user id. Who can use /ask.
+# Your Discord user id. Who can use /ask and press Approve.
 vercel env add DISCORD_MAINTAINER_IDS production
 ```
 
 > [!NOTE]
-> Anyone who sees the approvals channel can press Approve. Discord does not tell eve who pressed a button, so the channel is the only guard. Keep it a direct message or a private channel.
+> Only the users in `DISCORD_MAINTAINER_IDS` can press Approve or Cancel. The prompt shows what would be written, so keep the channel a direct message or a private channel.
 
 ## 5. Deploy
 
@@ -178,7 +178,7 @@ curl -X POST $TIA_URL/ops/digest/trigger \
 | Nothing happens after opening an issue | No valid `.github/tia.yml` on the default branch, check with `pnpm validate-config`. Or the connector was created without the `issues` event. Or the author is a maintainer and `triageMaintainerIssues` is off. |
 | `"dryRun": true` in the decision log | No approvals channel is set, or the run came from a preview or a backfill. |
 | `/ask` answers nothing | Your id is not in `DISCORD_MAINTAINER_IDS`. |
-| Approve does nothing | The session expired. Runs park for 10 minutes. Trigger the issue again. |
+| Approve does nothing | Your id is not in `DISCORD_MAINTAINER_IDS`, or the session expired. Runs park for 10 minutes. Trigger the issue again. |
 | `tia didn't respond in time` on Approve | The Interactions Endpoint URL is empty. Editing the application in Discord's portal clears it. Set it back to `https://connect.vercel.com/trigger/<connector id>`. |
 | 401 locally | `VERCEL_OIDC_TOKEN` expired, run `vercel env pull`. |
 | 403 on a GitHub write | The app lacks the permission. |
