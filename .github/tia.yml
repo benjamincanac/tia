@@ -4,3 +4,5 @@ maintainers:
 package:
   name: tia
 help: https://hey-tia.vercel.app/
+discord:
+  digestChannel: false
