@@ -110,7 +110,8 @@ export const repoConfigSchema = z.strictObject({
     .default({ followUpDays: 14, mentionDays: 30, staleDays: 60 }),
   discord: z
     .strictObject({
-      digestChannel: z.string().default(""),
+      /** `false` turns the weekly digest off for this repository. Approvals are not affected. */
+      digestChannel: z.union([z.string(), z.literal(false)]).default(""),
       approvalsChannel: z.string().default(""),
     })
     .default({ digestChannel: "", approvalsChannel: "" }),
@@ -151,7 +152,8 @@ export function resolveRepoConfig(owner: string, repo: string, file: RepoConfigF
     repo,
     thresholds: { ...DEFAULT_THRESHOLDS, ...file.thresholds },
     discord: {
-      digestChannel: file.discord.digestChannel || env("DISCORD_DIGEST_CHANNEL_ID") || "",
+      digestChannel:
+        file.discord.digestChannel === false ? "" : file.discord.digestChannel || env("DISCORD_DIGEST_CHANNEL_ID") || "",
       approvalsChannel:
         file.discord.approvalsChannel || env("DISCORD_APPROVALS_CHANNEL_ID") || "",
     },

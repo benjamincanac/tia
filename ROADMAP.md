@@ -72,7 +72,3 @@ The playground is gone. `benjamincanac/tia` is the test repository now: the app 
 Two config keys are worth a second look. `source` reads areas, releases and the next major branch from another repository, and nothing declares it today. `triageMaintainerIssues` is what makes a test repository usable, so it stays.
 
 Areas get the same look. The live `nuxt/ui` config does not declare any, so no repository uses them today. Only [`examples/nuxt-ui.tia.yml`](examples/nuxt-ui.tia.yml) does, where they add one Jev question per component to every issue for a single output, the "Top clusters" field of the weekly digest. If no repository asks for them, they go from the example first and from the code after.
-
-### What stays
-
-An opt-out of the weekly digest, `discord.digestChannel: false`. Nothing asks for it today, and it is not worth a schema change until something does.
