@@ -1,6 +1,6 @@
 import { env } from "../config";
-import type { Experimental_EvaluationQuestion as Question, JSONValue } from "ai";
-import { evaluate } from "eve/ai";
+import type { Experimental_DecisionQuestion as Question, Experimental_DecisionState as State } from "ai";
+import { decide } from "eve/ai";
 
 /** Resolved through AI Gateway. */
 export function jevModel(): string {
@@ -9,10 +9,10 @@ export function jevModel(): string {
 
 export async function ask<const Q extends Record<string, Question>>(
   questions: Q,
-  state: Exclude<JSONValue, null | number | boolean>,
+  state: State,
   abortSignal?: AbortSignal,
 ) {
-  const result = await evaluate({ model: jevModel(), state, questions, abortSignal });
+  const result = await decide({ model: jevModel(), state, questions, abortSignal });
   return result.answers;
 }
 

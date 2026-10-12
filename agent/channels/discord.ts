@@ -70,6 +70,11 @@ export default discordChannel({
     if (!maintainerIds().includes(interaction.user.id)) return null;
     return { auth: defaultDiscordAuth(interaction) };
   },
+  // eve drops every press while `onCommand` is custom and this is not set. Same gate as `/ask`.
+  onInputResponse(ctx, interaction) {
+    if (!maintainerIds().includes(interaction.user.id)) return null;
+    return { auth: ctx.defaultAuth };
+  },
   events: {
     // A scheduled run speaks through its approval prompt alone. The prompt says what would be written
     // and its button what was decided, so the model's own summary is noise, and a run that asked

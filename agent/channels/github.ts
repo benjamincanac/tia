@@ -133,6 +133,9 @@ export default githubChannel({
     "input.requested"(event, channel) {
       console.warn(`[tia] input requested on ${channel.repository.fullName}, ignored`, JSON.stringify(event.requests.map((request) => request.kind)));
     },
+    // eve queues prompts across these three handlers, so the other two are silenced with the first.
+    "input.resolved"() {},
+    "approval.settled"() {},
     "message.completed"(event, channel) {
       if (event.finishReason !== "tool-calls" && event.message) {
         console.log(`[tia] ${channel.repository.fullName}#${channel.conversation.issueNumber ?? channel.conversation.pullRequestNumber}: ${event.message}`);
