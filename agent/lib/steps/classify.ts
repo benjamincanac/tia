@@ -186,7 +186,7 @@ export async function classify(context: TriageContext, signal?: AbortSignal): Pr
     const missing = !reported.version && !reported.unreleased;
     if (!resolved && kind?.report && isEnabled(config, "reproduction") && context.reproduction.versionHeading && missing) {
       if (!(await isMarked(issue, "version-request"))) {
-        facts.push(`Ask which version of ${config.package?.name ?? "the project"} they are using.`);
+        facts.push("VERSION_REQUEST");
         once.push("version-request");
       }
     }

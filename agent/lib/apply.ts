@@ -27,15 +27,21 @@ export function retestRequest(retest: RetestRequest): string {
   return `Could you check whether it still happens on ${retest.name} ${retest.latest}, the latest release? This was reported on ${retest.version}.`;
 }
 
+/** Fixed wording, so the model never adds what it did or did not find around the question. */
+export function versionRequest(config: RepoConfig): string {
+  return `Could you tell us which version of ${config.package?.name ?? "the project"} you are using?`;
+}
+
 /** What `apply_triage` appends after the model's sentence, one entry per templated fact. */
-function templated(plan: TriagePlan, reproduction: ReproductionSettings): string[] {
+function templated(config: RepoConfig, plan: TriagePlan, reproduction: ReproductionSettings): string[] {
   const parts: string[] = [];
+  if (plan.facts.includes("VERSION_REQUEST")) parts.push(versionRequest(config));
   if (plan.facts.includes("REPRODUCTION_REQUEST")) parts.push(reproductionRequest(reproduction));
   if (plan.facts.includes("RETEST_REQUEST") && plan.retest) parts.push(retestRequest(plan.retest));
   return parts;
 }
 
-const TEMPLATED_FACTS = ["REPRODUCTION_REQUEST", "RETEST_REQUEST"];
+const TEMPLATED_FACTS = ["VERSION_REQUEST", "REPRODUCTION_REQUEST", "RETEST_REQUEST"];
 
 /** The bot only ever applies its own labels. `closed-by-bot`, priorities and the rest belong to maintainers. */
 export function isAllowedLabel(config: RepoConfig, label: string): boolean {
@@ -62,7 +68,7 @@ export function buildComment(config: RepoConfig, plan: TriagePlan, written: stri
     const where = config.securityPolicy ? `following our [security policy](${config.securityPolicy})` : "through the repository's security policy";
     parts.push(`Thanks for the report. Please report security issues privately ${where} rather than in a public issue.`);
   } else if (written.trim()) parts.push(written.trim());
-  parts.push(...templated(plan, reproduction));
+  parts.push(...templated(config, plan, reproduction));
   const mention = mentionLine(config, plan);
   if (mention) parts.push(mention);
   return parts.join("\n\n");
@@ -80,23 +86,18 @@ export interface AppliedActions {
 }
 
 /**
- * The model's text only goes out to convey facts. A triage run that recorded none has nothing to tell
- * the reporter, and a small model fills the silence with "noted, nothing else needed". Without a
- * recorded plan the run answers an explicit mention, and its text is the answer.
+ * The model's text only goes out to convey facts the templates do not. A run that recorded none has
+ * nothing to tell the reporter, and a small model fills the silence with what it did not find: "no
+ * duplicate was found", "we could not reproduce it". Without a recorded plan the run answers an
+ * explicit mention, and its text is the answer.
  */
 export function reporterText(plan: TriagePlan | null, comment: string): string {
-  return plan && plan.facts.length === 0 ? "" : comment.trim();
+  return plan && plan.facts.every((fact) => TEMPLATED_FACTS.includes(fact)) ? "" : comment.trim();
 }
 
 /** Why the model has to rewrite its comment, or `null`. The message tells it what to change. */
-export function commentProblem(plan: TriagePlan, comment: string, reproduction: ReproductionSettings): string | null {
-  const appended = templated(plan, reproduction).join(" ");
-  // The requests are appended in full. When they are the only facts, a comment that makes one
-  // says the same thing twice. A run that also found an unusable link still has to explain it.
-  const onlyTemplated = plan.facts.every((fact) => TEMPLATED_FACTS.includes(fact));
-  if (appended && onlyTemplated && /reproduc|sandbox|stackblitz|codesandbox|minimal|retest|latest|version|\d+\.\d+/i.test(comment)) {
-    return "The request is appended for you, so the comment must not make it. Keep one short sentence thanking the reporter, and call apply_triage again.";
-  }
+export function commentProblem(config: RepoConfig, plan: TriagePlan, comment: string, reproduction: ReproductionSettings): string | null {
+  const appended = templated(config, plan, reproduction).join(" ");
   const words = countWords(`${comment} ${appended}`);
   if (words > MAX_COMMENT_WORDS) return `The comment is ${words} words with the appended request, the limit is ${MAX_COMMENT_WORDS}. Shorten it and call apply_triage again.`;
   return null;

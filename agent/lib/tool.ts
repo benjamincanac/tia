@@ -71,6 +71,6 @@ export async function writeApproval<T>({ toolInput }: ApprovalContext<T>): Promi
   // queued, has nothing to approve. The tool would throw right after the maintainer's click.
   const context = await loadTriageContext(input.data).catch(() => null);
   if (!context) return { type: "denied", reason: "The issue could not be read. End the run without calling apply_triage again." };
-  const problem = plan ? commentProblem(plan, comment, context.reproduction) : null;
+  const problem = plan ? commentProblem(context.config, plan, comment, context.reproduction) : null;
   return problem ? { type: "denied", reason: problem } : "user-approval";
 }

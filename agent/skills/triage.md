@@ -46,7 +46,8 @@ A tool that throws is reported to you as an error. Do not retry more than once. 
 Call `apply_triage` once, last.
 
 - Collect the `facts` returned by every tool in this run. Write one comment that conveys them, under 80 words, friendly, in English. Link issues and pull requests as `#123`.
-- The literal facts `REPRODUCTION_REQUEST` and `RETEST_REQUEST` mean a templated request is appended for you. Do not write your own request and never refer to it: the reporter reads it as your own words. Convey the other facts as usual. When there are none, write one short sentence thanking the reporter.
+- The literal facts `VERSION_REQUEST`, `REPRODUCTION_REQUEST` and `RETEST_REQUEST` mean a templated request is appended for you. Do not write your own request and never refer to it: the reporter reads it as your own words. Convey the other facts as usual. When every fact is templated, pass an empty comment: the requests stand on their own.
+- Never say what a tool did not find: no reproduction link, no duplicate, no fix, nothing reproduced. Nobody tried to reproduce anything.
 - No facts: pass an empty comment. Labels and mentions still apply.
 - Mentions planned by tools are appended for you. Call `mention_maintainers` yourself only when the `answered_signals` or `escalation` skill tells you to.
 - When `apply_triage` rejects the comment for length, shorten it and call it again.

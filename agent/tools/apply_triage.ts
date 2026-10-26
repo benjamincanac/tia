@@ -14,7 +14,7 @@ export default defineTool({
     comment: z
       .string()
       .describe(
-        `The comment for the reporter, in English, friendly maintainer tone, under ${MAX_COMMENT_WORDS} words, conveying the plan's facts and nothing else. Empty string when the plan has no facts. The reproduction request and the maintainer mention are appended automatically, do not write them.`,
+        `The comment for the reporter, in English, friendly maintainer tone, under ${MAX_COMMENT_WORDS} words, conveying the plan's facts and nothing else. Empty string when the plan has no facts besides VERSION_REQUEST, REPRODUCTION_REQUEST and RETEST_REQUEST. Those requests and the maintainer mention are appended automatically, do not write them.`,
       ),
   }),
   approval: { request: writeApproval, response: maintainerResponse },
@@ -36,7 +36,7 @@ export default defineTool({
     }
 
     // Runs that ask for an approval were already checked before the prompt. Dry runs and fixtures are checked here.
-    const problem = commentProblem(plan, comment, context.reproduction);
+    const problem = commentProblem(context.config, plan, comment, context.reproduction);
     if (problem) throw new Error(problem);
 
     const actions = await applyPlan(context.config, plan, comment, context.humanLabels, context.reporterLabels, context.issue.labels, context.reproduction, context.intakeLabels, context.kinds);
