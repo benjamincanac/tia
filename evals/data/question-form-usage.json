@@ -1,0 +1,55 @@
+{
+  "config": {
+    "maintainers": [
+      "maintainer"
+    ],
+    "upstreams": [
+      "unovue/reka-ui",
+      "tailwindlabs/tailwindcss"
+    ],
+    "package": {
+      "name": "@acme/ui"
+    },
+    "nextMajor": "v5",
+    "reproduction": {
+      "blank": [
+        "acme-ui-starter"
+      ]
+    },
+    "securityPolicy": "https://example.com/SECURITY.md",
+    "areas": [
+      {
+        "kind": "component",
+        "names": [
+          "Button",
+          "Select",
+          "SelectMenu",
+          "Modal",
+          "Table",
+          "Input",
+          "Tooltip"
+        ]
+      }
+    ]
+  },
+  "latestVersion": "1.4.0",
+  "reporterLabels": [
+    "question"
+  ],
+  "issue": {
+    "authorAssociation": "NONE",
+    "labels": [
+      "question",
+      "triage"
+    ],
+    "type": null,
+    "createdAt": "2026-09-20T09:00:00Z",
+    "comments": [],
+    "title": "Typing a relation in a filter breaks TypeScript",
+    "author": "marijn",
+    "body": "I have this type:\n\n```ts\nexport type Page = {\n  parent?: AcmeResponse<Page>\n}\n```\n\nWhen I filter pages without a parent with `{ parent: { slug: { $null: true } } }`, TypeScript says `slug` does not exist in the filter type. Writing `{ parent: { data: { slug: { $null: true } } } }` silences the error but then the filter does not work.\n\nI understand the response shape differs from the filter shape, but how should I write my `Page` type so both work?"
+  },
+  "similar": [],
+  "fixedCandidates": [],
+  "upstreamCandidates": []
+}

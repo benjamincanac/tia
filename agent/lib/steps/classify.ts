@@ -75,7 +75,10 @@ export async function classify(context: TriageContext, signal?: AbortSignal): Pr
   );
 
   // Below the threshold the kind is unknown, and the steps for reports do not run on a guess.
-  const chosen = choiceConfidence(answers.type) >= t.labels ? context.kinds.find((candidate) => candidate.name === answers.type.choice) : null;
+  const confident = choiceConfidence(answers.type) >= t.labels ? context.kinds.find((candidate) => candidate.name === answers.type.choice) : null;
+  // The reporter filed it as a question and Jev reads one: two signals agree, and a report kind does not replace it.
+  const askedQuestion = isEnabled(config, "question") && context.reporterLabels.has("question") && answers.is_question.probability >= t.labels;
+  const chosen = askedQuestion && confident?.report ? null : confident;
   // What a maintainer or tia marked on the issue wins. What the reporter's form marked is a claim, and a confident answer replaces it.
   const marked = kindOf(issue, context.kinds);
   const byType = marked !== null && marked.type !== null && marked.type === issue.type;
