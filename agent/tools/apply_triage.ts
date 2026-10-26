@@ -26,6 +26,8 @@ export default defineTool({
     // What the maintainer was shown is gone, so nothing is written in its name.
     const replaced = recorded ? sessionOf(recorded.runId) !== ctx.session.id : await isTriageRun(runId(ctx));
     if (replaced) return { applied: false, reason: "The plan of this run was replaced by a newer run on the issue. Nothing was written." };
+    // The run was queued, and maybe approved, a while ago. An issue closed since is settled.
+    if (context.issue.state !== "open") return { applied: false, reason: "The issue was closed since the run started. Nothing was written." };
     const comment = reporterText(recorded, written);
     // Without a plan no tool evaluated the skip rules for this run, so they are evaluated here.
     // The activity guard is off: this path answers an explicit @-mention.
