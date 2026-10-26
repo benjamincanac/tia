@@ -278,6 +278,28 @@ export function setLastAnnounced(ref: IssueRef, fingerprint: string): Promise<vo
   return kv().set(`tia:announced:${issueKey(ref)}`, fingerprint, YEAR_SECONDS);
 }
 
+export interface ApprovalPrompt {
+  channelId: string;
+  messageId: string;
+}
+
+/**
+ * Records the Discord message holding the approval prompt of an issue and returns the one it replaces.
+ * Each run starts from a fresh plan, so an older prompt can no longer write anything.
+ */
+export async function swapApprovalPrompt(ref: IssueRef, prompt: ApprovalPrompt): Promise<ApprovalPrompt | null> {
+  const key = `tia:prompt:${issueKey(ref)}`;
+  const previous = await kv().get<ApprovalPrompt>(key);
+  await kv().set(key, prompt, 30 * 24 * 60 * 60);
+  if (!previous || previous.messageId === prompt.messageId) return null;
+  // An answered prompt keeps its answer: it records what was written.
+  return (await kv().get<number>(`tia:prompt-answered:${previous.messageId}`)) === null ? previous : null;
+}
+
+export function markPromptAnswered(messageId: string): Promise<void> {
+  return kv().set(`tia:prompt-answered:${messageId}`, Date.now(), 30 * 24 * 60 * 60);
+}
+
 /** Backfills run the real pipeline on a repo that may have `dryRun: false`. They must not write. */
 // Set when the run is dispatched and keyed by issue, since the run id is not known yet. The window is
 // kept short: a real event on the same issue within it also runs dry, and the daily sweep catches up.

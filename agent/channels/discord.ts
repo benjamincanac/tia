@@ -6,7 +6,7 @@ import { buildComment, reporterText } from "../lib/apply";
 import { loadTriageContext } from "../lib/context";
 import { discordCredentials } from "../lib/discord";
 import { emptyPlan } from "../lib/plan";
-import { getPlan } from "../lib/store";
+import { getPlan, markPromptAnswered, swapApprovalPrompt } from "../lib/store";
 
 const applyInput = z.object({ owner: z.string(), repo: z.string(), issueNumber: z.number(), comment: z.string() });
 
@@ -23,7 +23,8 @@ async function describeWrite(input: unknown, runId: string): Promise<string> {
   const recorded = await getPlan(ref);
   const plan = recorded ?? emptyPlan(ref, runId, true);
 
-  const lines = [`**[${owner}/${repo}#${issueNumber}](<https://github.com/${owner}/${repo}/issues/${issueNumber}>)**`];
+  const title = context ? ` ${context.issue.title.replaceAll(/[*_`~|<>[\]]/g, "")}` : "";
+  const lines = [`**[${owner}/${repo}#${issueNumber}](<https://github.com/${owner}/${repo}/issues/${issueNumber}>)**${title}`];
   if (plan.setType) lines.push(`Type: ${context?.issue.type ? `${context.issue.type} → ` : ""}${plan.setType}`);
   // The plan is what the steps asked for. Only labels the issue carries can be removed, and only ones it lacks added.
   const current = context?.issue.labels ?? [];
@@ -31,8 +32,8 @@ async function describeWrite(input: unknown, runId: string): Promise<string> {
   const remove = plan.removeLabels.filter((label) => !context || current.includes(label));
   if (add.length) lines.push(`Add: ${add.join(", ")}`);
   if (remove.length) lines.push(`Remove: ${remove.join(", ")}`);
-
   if (plan.quiet && !plan.security) lines.push(`No comment: ${plan.quiet}`);
+
   // What `apply_triage` would post, built the same way.
   const body = context ? buildComment(context.config, plan, reporterText(recorded, comment), context.reproduction) : reporterText(recorded, comment);
   if (body) lines.push("", body.length > 900 ? `${body.slice(0, 900)}…` : body);
@@ -99,6 +100,16 @@ export default discordChannel({
           if (posted.id) {
             channel.continuation?.alias(discordContinuationToken(channelId, posted.id));
             channel.state.conversationId = posted.id;
+            // A newer run on the same issue replaced the plan an older prompt would apply. Its buttons go,
+            // so the same issue is never shown twice as waiting.
+            const ref = applyInput.safeParse(request.action?.input);
+            const previous = ref.success ? await swapApprovalPrompt(ref.data, { channelId, messageId: posted.id }) : null;
+            if (previous) {
+              const superseded = [{ type: 1, components: [{ type: 2, style: 2, label: "Superseded", custom_id: "tia:answered", disabled: true }] }];
+              await channel.discord
+                .request(`/channels/${previous.channelId}/messages/${previous.messageId}`, { components: superseded }, { botAuth: true, method: "PATCH" })
+                .catch(() => undefined);
+            }
           }
           anchored = true;
           continue;
@@ -117,6 +128,7 @@ export default discordChannel({
       const components = answer
         ? [{ type: 1, components: [{ type: 2, style: answer === "Approved" ? 3 : 2, label: answer, custom_id: "tia:answered", disabled: true }] }]
         : [];
+      if (answer) await markPromptAnswered(conversationId).catch(() => undefined);
       await channel.discord
         .request(`/channels/${channelId}/messages/${conversationId}`, { components }, { botAuth: true, method: "PATCH" })
         .catch(() => undefined);
