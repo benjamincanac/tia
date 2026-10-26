@@ -108,6 +108,43 @@ export function isBehind(version: string, latest: string): boolean {
   return false;
 }
 
+const VERSION = String.raw`\d+\.\d+(?:\.\d+)?(?:-[\w.]+)?`;
+
+/** A commit, the default branch or a preview build: the reporter runs unreleased code, newer than any release. */
+const UNRELEASED = /\b(?:default branch|pkg\.pr\.new|(?:at|commit)\s+`?(?=[0-9a-f]*[a-f])[0-9a-f]{7,40}\b)/i;
+
+function compareVersions(a: string, b: string): number {
+  const parse = (value: string) => value.split("-")[0]?.split(".").map(Number) ?? [];
+  const [x, y] = [parse(a), parse(b)];
+  for (let i = 0; i < 3; i++) {
+    if ((x[i] ?? 0) !== (y[i] ?? 0)) return (x[i] ?? 0) - (y[i] ?? 0);
+  }
+  return 0;
+}
+
+export interface ReportedVersion {
+  version: string | null;
+  /** No version is given, and the report says it runs unreleased code. */
+  unreleased: boolean;
+}
+
+/**
+ * The version of the package the report is on. A version written next to the package name wins over
+ * the form's field, where reporters often type the framework's. The highest one wins, so "worked on
+ * 4.11, broke on 4.12" is not asked to retest on 4.12.
+ */
+export function reportedVersion(body: string, config: RepoConfig, settings: ReproductionSettings): ReportedVersion {
+  const name = config.package?.name;
+  if (name) {
+    // Not part of a longer name: `vue` must not read `@vitejs/plugin-vue: 5.2.1`.
+    const pattern = new RegExp(`(?<![\\w@/.-])${name.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&")}[\\s:=@^~v'"\`|]{0,6}(${VERSION})`, "gi");
+    const found = [...body.matchAll(pattern)].map((match) => match[1] ?? "").filter(Boolean);
+    if (found.length) return { version: found.reduce((a, b) => (compareVersions(a, b) >= 0 ? a : b)), unreleased: false };
+  }
+  const version = sectionOf(body, settings.versionHeading)?.match(new RegExp(VERSION))?.[0] ?? null;
+  return { version, unreleased: !version && UNRELEASED.test(body) };
+}
+
 export interface ReproductionOutcome {
   links: ReproductionLink[];
   valid: ReproductionLink | null;
@@ -123,7 +160,7 @@ export async function validateReproduction(context: TriageContext, signal?: Abor
   const { config, issue, fixture, reproduction: settings } = context;
   // The form field comes first. Reporters also paste links in the description or in later comments.
   const field = sectionOf(issue.body, settings.reproductionHeading) ?? "";
-  const reported = sectionOf(issue.body, settings.versionHeading)?.match(/\d+\.\d+\.\d+(?:-[\w.]+)?/)?.[0] ?? null;
+  const reported = reportedVersion(issue.body, config, settings);
   const text = [field, issue.body, ...issue.comments.filter((c) => c.author === issue.author).map((c) => c.body)].join("\n");
 
   const latestVersion = fixture?.latestVersion ?? (config.package ? await latestPackageVersion(config.package.name, signal) : null);
@@ -148,12 +185,12 @@ export async function validateReproduction(context: TriageContext, signal?: Abor
     patch.removeLabels = ["needs reproduction"];
     patch.facts = [`Thank @${helper?.author ?? issue.author} for the reproduction.`];
   }
-  if (valid && valid.kind !== "playground" && reported && latestVersion && isBehind(reported, latestVersion)) {
+  if (valid && valid.kind !== "playground" && reported.version && latestVersion && isBehind(reported.version, latestVersion)) {
     // Only a sandbox or a repository pins a version. The repository's own playground and docs run its current release.
     // Asked once. The sweep would otherwise repeat it on every run.
     if (config.package && !(await isMarked(issue, "retest-on-latest"))) {
       patch.facts = [...(patch.facts ?? []), "RETEST_REQUEST"];
-      patch.retest = { name: config.package.name, version: reported, latest: latestVersion };
+      patch.retest = { name: config.package.name, version: reported.version, latest: latestVersion };
       patch.once = ["retest-on-latest"];
     }
   }

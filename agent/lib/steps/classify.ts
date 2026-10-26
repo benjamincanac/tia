@@ -7,12 +7,13 @@ import {
   upstreamQuestion,
   verificationQuestions,
 } from "../jev/questions";
-import { kindOf, sectionOf } from "../issue-forms";
+import { kindOf } from "../issue-forms";
 import type { TriageContext } from "../context";
 import { ask, choiceConfidence, clip, clipBody, clipComments } from "../jev";
 import { isManagedLabel } from "../labels";
 import type { PlanPatch } from "../plan";
 import { isMarked } from "../store";
+import { reportedVersion } from "./reproduction";
 
 export type NextStep =
   | "validate_reproduction"
@@ -181,9 +182,9 @@ export async function classify(context: TriageContext, signal?: AbortSignal): Pr
 
     // The form asks for a version and the report has none. Asked once, in the same comment as
     // whatever else the run says: the reporter may answer in a comment, which the body never shows.
-    const versionHeading = context.reproduction.versionHeading;
-    const reported = sectionOf(issue.body, versionHeading)?.match(/\d+\.\d+(?:\.\d+)?(?:-[\w.]+)?/)?.[0] ?? null;
-    if (!resolved && kind?.report && isEnabled(config, "reproduction") && versionHeading && !reported) {
+    const reported = reportedVersion(issue.body, config, context.reproduction);
+    const missing = !reported.version && !reported.unreleased;
+    if (!resolved && kind?.report && isEnabled(config, "reproduction") && context.reproduction.versionHeading && missing) {
       if (!(await isMarked(issue, "version-request"))) {
         facts.push(`Ask which version of ${config.package?.name ?? "the project"} they are using.`);
         once.push("version-request");
@@ -193,7 +194,7 @@ export async function classify(context: TriageContext, signal?: AbortSignal): Pr
     // Not a decision either: a regression is urgent, not triaged. The maintainers are told now, and the issue stays where it is.
     if (!resolved && kind?.report && isEnabled(config, "regression") && !has("regression") && answers.is_regression.probability >= t.labels) {
       labels.push("regression");
-      mentions.push({ template: "regression", detail: `${reported ? `Reported on ${reported}.` : ""}${summary}`.trim() });
+      mentions.push({ template: "regression", detail: `${reported.version ? `Reported on ${reported.version}.` : ""}${summary}`.trim() });
     }
 
     if (!resolved && !waitsForReproduction && isEnabled(config, "fixed") && kind?.report && !has("needs verification")) {

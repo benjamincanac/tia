@@ -1,0 +1,52 @@
+{
+  "config": {
+    "maintainers": [
+      "maintainer"
+    ],
+    "upstreams": [
+      "unovue/reka-ui",
+      "tailwindlabs/tailwindcss"
+    ],
+    "package": {
+      "name": "@acme/ui"
+    },
+    "nextMajor": "v5",
+    "reproduction": {
+      "blank": [
+        "acme-ui-starter"
+      ]
+    },
+    "securityPolicy": "https://example.com/SECURITY.md",
+    "areas": [
+      {
+        "kind": "component",
+        "names": [
+          "Button",
+          "Select",
+          "SelectMenu",
+          "Modal",
+          "Table",
+          "Input",
+          "Tooltip"
+        ]
+      }
+    ]
+  },
+  "latestVersion": "4.12.0",
+  "versionHeading": "Version",
+  "issue": {
+    "authorAssociation": "NONE",
+    "labels": [
+      "triage"
+    ],
+    "type": null,
+    "createdAt": "2026-09-20T09:00:00Z",
+    "comments": [],
+    "title": "`UInput` applies `app.baseURL` twice to its leading avatar",
+    "author": "orbis",
+    "body": "### Environment\n\n| | |\n| --- | --- |\n| **Nuxt version** | `4.6.2` |\n| **Modules** | `@acme/ui@4.12.0`, `@nuxt/image@2.2.0` |\n\n### Version\n\n4.6.2\n\n### Reproduction\n\nhttps://github.com/orbis/acme-input-baseurl\n\n### Description\n\nWith `app.baseURL: '/base/'`, the leading avatar of `UInput` renders `<img src=\"/base/_ipx/_/base/avatar.png\">`, so the image 404s. A plain `NuxtImg` next to it renders `/base/_ipx/_/avatar.png`."
+  },
+  "similar": [],
+  "fixedCandidates": [],
+  "upstreamCandidates": []
+}
