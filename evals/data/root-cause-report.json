@@ -1,0 +1,52 @@
+{
+  "config": {
+    "maintainers": [
+      "maintainer"
+    ],
+    "upstreams": [
+      "unovue/reka-ui",
+      "tailwindlabs/tailwindcss"
+    ],
+    "package": {
+      "name": "@acme/ui"
+    },
+    "nextMajor": "v5",
+    "reproduction": {
+      "blank": [
+        "acme-ui-starter"
+      ]
+    },
+    "securityPolicy": "https://example.com/SECURITY.md",
+    "areas": [
+      {
+        "kind": "component",
+        "names": [
+          "Button",
+          "Select",
+          "SelectMenu",
+          "Modal",
+          "Table",
+          "Input",
+          "Tooltip"
+        ]
+      }
+    ]
+  },
+  "latestVersion": "1.4.0",
+  "versionHeading": "Version",
+  "issue": {
+    "authorAssociation": "NONE",
+    "labels": [
+      "triage"
+    ],
+    "type": null,
+    "createdAt": "2026-09-20T09:00:00Z",
+    "comments": [],
+    "title": "Select: typeahead never matches items whose label starts with an uppercase letter",
+    "author": "sebx",
+    "body": "### Environment\n\nacme/ui at 2b70204 (default branch). Any browser.\n\n### What happens\n\nWith the menu open, typing `b` highlights nothing when the items are `Banana` and `Blueberry`.\n\n### Minimal repro\n\n```vue\n<script setup lang=\"ts\">\nconst value = ref()\n</script>\n\n<template>\n  <USelect v-model=\"value\" :items=\"['Apple', 'Banana', 'Blueberry']\" />\n</template>\n```\n\nOpen the select and type `b`.\n\n### Root cause\n\nIn `src/runtime/components/Select.vue`, `onTypeahead` lowercases the typed key but compares it with `item.label.startsWith(key)` on the raw label, so `Banana` never starts with `b`."
+  },
+  "similar": [],
+  "fixedCandidates": [],
+  "upstreamCandidates": []
+}

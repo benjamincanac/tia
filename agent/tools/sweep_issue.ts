@@ -8,6 +8,7 @@ import { getTimeline, listReleases } from "../lib/github";
 import { ask, clip } from "../lib/jev";
 import { updatePlan, type PlanPatch } from "../lib/plan";
 import { issueState } from "../lib/steps/classify";
+import { isRunnable, reporterLinks } from "../lib/steps/reproduction";
 import { clearEvaluated, getClassified, isMarked, recordDecision } from "../lib/store";
 import { labeledAt, releaseCheckApplies } from "../lib/sweep";
 import { issueInput, requireContext, runId } from "../lib/tool";
@@ -65,9 +66,11 @@ export default defineTool({
       if (replied) next = ["classify_issue"];
       if (age >= (replied ? mentionDays : followUpDays)) {
         // Nobody is asked twice on an old answer. The request may have been wrong, or someone other than the reporter may have answered it.
-        const result = await ask(hasReproductionQuestions(), issueState(context), ctx.abortSignal);
+        // A sandbox of the reporter's settles it without Jev, as in `classify_issue`.
+        const linked = reporterLinks(context).some(isRunnable);
+        const result = linked ? null : await ask(hasReproductionQuestions(), issueState(context), ctx.abortSignal);
         answers = result;
-        if (result.has_reproduction.probability >= config.thresholds.has_reproduction) next = ["classify_issue"];
+        if (!result || result.has_reproduction.probability >= config.thresholds.has_reproduction) next = ["classify_issue"];
         else if (age >= mentionDays) {
           if (await pending("reproduction-mention")) {
             patch = { mentions: [{ template: "needs_reproduction_idle", detail: `No reproduction after ${Math.floor(age)} days.` }], once: ["reproduction-mention"] };

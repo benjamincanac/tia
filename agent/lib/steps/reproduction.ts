@@ -145,6 +145,20 @@ export function reportedVersion(body: string, config: RepoConfig, settings: Repr
   return { version, unreleased: !version && UNRELEASED.test(body) };
 }
 
+/** A sandbox or the repository's playground shows the problem by itself. A repository may be the reporter's whole app. */
+export function isRunnable(link: ReproductionLink): boolean {
+  return link.kind !== "github" && !link.blankTemplate;
+}
+
+/** Reproduction links the reporter gave, in the description or in a later comment. */
+export function reporterLinks(context: TriageContext): ReproductionLink[] {
+  const { config, issue, reproduction: settings } = context;
+  // The form field comes first. Reporters also paste links in the description or in later comments.
+  const field = sectionOf(issue.body, settings.reproductionHeading) ?? "";
+  const text = [field, issue.body, ...issue.comments.filter((c) => c.author === issue.author).map((c) => c.body)].join("\n");
+  return extractReproductionLinks(text, config, settings);
+}
+
 export interface ReproductionOutcome {
   links: ReproductionLink[];
   valid: ReproductionLink | null;
@@ -158,13 +172,10 @@ export interface ReproductionOutcome {
  */
 export async function validateReproduction(context: TriageContext, signal?: AbortSignal): Promise<ReproductionOutcome> {
   const { config, issue, fixture, reproduction: settings } = context;
-  // The form field comes first. Reporters also paste links in the description or in later comments.
-  const field = sectionOf(issue.body, settings.reproductionHeading) ?? "";
   const reported = reportedVersion(issue.body, config, settings);
-  const text = [field, issue.body, ...issue.comments.filter((c) => c.author === issue.author).map((c) => c.body)].join("\n");
 
   const latestVersion = fixture?.latestVersion ?? (config.package ? await latestPackageVersion(config.package.name, signal) : null);
-  const links = extractReproductionLinks(text, config, settings);
+  const links = reporterLinks(context);
   const valid = links.find((link) => !link.blankTemplate) ?? null;
   // Someone else can reproduce a report the reporter could not. Their link is not the reporter's to be thanked for.
   const helper = valid

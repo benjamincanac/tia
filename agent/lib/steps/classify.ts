@@ -13,7 +13,7 @@ import { ask, choiceConfidence, clip, clipBody, clipComments } from "../jev";
 import { isManagedLabel } from "../labels";
 import type { PlanPatch } from "../plan";
 import { isMarked } from "../store";
-import { reportedVersion } from "./reproduction";
+import { isRunnable, reportedVersion, reporterLinks } from "./reproduction";
 
 export type NextStep =
   | "validate_reproduction"
@@ -168,7 +168,9 @@ export async function classify(context: TriageContext, signal?: AbortSignal): Pr
     // "this is a duplicate" in the same comment would contradict itself.
     let waitsForReproduction = false;
     if (!resolved && kind?.report && isEnabled(config, "reproduction")) {
-      if (answers.has_reproduction.probability < t.has_reproduction) {
+      // A sandbox of the reporter's is a reproduction whatever Jev reads in it.
+      const linked = reporterLinks(context).some(isRunnable);
+      if (!linked && answers.has_reproduction.probability < t.has_reproduction) {
         waitsForReproduction = true;
         if (!has("needs reproduction")) {
           labels.push("needs reproduction");
