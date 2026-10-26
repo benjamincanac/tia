@@ -1,5 +1,5 @@
 import { buildComment } from "./apply";
-import { skipReason, type TriageContext } from "./context";
+import { quietReason, skipReason, type TriageContext } from "./context";
 import { emptyPlan, mergePlan, type TriagePlan } from "./plan";
 import { classify } from "./steps/classify";
 import { checkDuplicate } from "./steps/duplicate";
@@ -31,7 +31,7 @@ export async function runPipeline(context: TriageContext, options: { signal?: Ab
 
   const classified = await classify(context, signal);
   answers.classify = classified.answers;
-  plan = mergePlan(plan, "classify", { ...classified.patch, ...(classified.type ? { type: classified.type } : {}) });
+  plan = mergePlan(plan, "classify", { ...classified.patch, quiet: quietReason(context), ...(classified.type ? { type: classified.type } : {}) });
 
   if (!plan.escalate && !plan.security) {
     if (classified.next.includes("validate_reproduction")) {

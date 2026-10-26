@@ -1,13 +1,12 @@
 import { isEnabled, type RepoConfig } from "../config";
 import { getTimeline, listOpenIssues, listReleases, loadRepoConfig, type Issue, type TimelineEvent } from "./github";
 import { kindOf, loadIntakeLabels, loadIssueKinds, type IssueKind } from "./issue-forms";
+import { WAITING_LABELS } from "./plan";
 import { openSetupPullRequest } from "./setup";
 import { closedUpstreamPairs } from "./steps/upstream";
 import { alreadyEvaluated, enqueue, markEvaluated, getClassified, getLastSeenRelease, setLastSeenRelease, takeRepoPasses, trackUpstreamPair, type Classified, type QueueItem } from "./store";
 
 const DAY_MS = 24 * 60 * 60_000;
-/** Labels tia applies that wait on someone. The intake labels of the repository are swept too. */
-const SWEEP_LABELS = ["needs reproduction", "needs verification"];
 
 /** Sessions started per minute by `schedules/dispatch_queue`. */
 export const DISPATCH_BATCH = 5;
@@ -40,7 +39,7 @@ export function labeledAt(timeline: readonly TimelineEvent[], label: string): st
  * A timeline that cannot be read must not stop the sweep of the repository, so it counts from `updatedAt` too.
  */
 async function thresholdsCrossed(issue: Issue, config: RepoConfig): Promise<number> {
-  const waiting = SWEEP_LABELS.find((label) => issue.labels.includes(label));
+  const waiting = WAITING_LABELS.find((label) => issue.labels.includes(label));
   const since = (waiting && labeledAt(await getTimeline(issue).catch(() => []), waiting)) || issue.updatedAt;
   const days = (Date.now() - Date.parse(since)) / DAY_MS;
   const { followUpDays, mentionDays, staleDays } = config.sweep;
@@ -65,9 +64,9 @@ export interface SweepSummary {
  * decision is recorded, so it is left alone.
  */
 async function listSweepable(config: RepoConfig, intakeLabels: readonly string[]): Promise<Issue[]> {
-  if (intakeLabels.length) return listOpenIssues(config, [...intakeLabels, ...SWEEP_LABELS]);
+  if (intakeLabels.length) return listOpenIssues(config, [...intakeLabels, ...WAITING_LABELS]);
   const issues = await listOpenIssues(config);
-  return issues.filter((issue) => issue.labels.length === 0 || issue.labels.some((label) => SWEEP_LABELS.includes(label)));
+  return issues.filter((issue) => issue.labels.length === 0 || issue.labels.some((label) => WAITING_LABELS.includes(label)));
 }
 
 /**

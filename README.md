@@ -20,6 +20,7 @@ classify_issue ─▶ track_upstream ─▶ validate_reproduction
 - Runs that need an approval happen in a Discord channel, with Approve and Cancel buttons. Without that channel they are forced to dry-run.
 - Text written by GitHub users never reaches the model's prompt. An @-mention is reduced by Jev to "triage request or not".
 - A report that says it worked in an earlier version gets the `regression` label and a mention, and shows first in the weekly digest.
+- An issue someone is already on gets its labels and no comment: an open pull request references it, a maintainer replied or labeled it, or it was opened more than `sweep.staleDays` ago. An @-mention is still answered.
 - A merged pull request that mentions an open issue without closing it re-checks that issue right away. The reporter is told the fix is merged, and asked to verify once a release carries it.
 - Raw Jev answers are stored next to every action, for threshold tuning.
 

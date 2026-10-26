@@ -1,7 +1,7 @@
 import { defineTool } from "eve/tools";
 import { z } from "zod";
 
-import { skipReason } from "../lib/context";
+import { quietReason, skipReason } from "../lib/context";
 import { updatePlan } from "../lib/plan";
 import { classify } from "../lib/steps/classify";
 import { recordDecision, rememberClassified } from "../lib/store";
@@ -25,7 +25,8 @@ export default defineTool({
     }
 
     const outcome = await classify(context, ctx.abortSignal);
-    const plan = await updatePlan(run, ref, context.dryRun, "classify", { ...outcome.patch, ...(outcome.type ? { type: outcome.type } : {}) });
+    const quiet = force ? null : quietReason(context);
+    const plan = await updatePlan(run, ref, context.dryRun, "classify", { ...outcome.patch, quiet, ...(outcome.type ? { type: outcome.type } : {}) });
     // Kept for the release passes, which re-check the fix without classifying again.
     await rememberClassified(ref, { releaseCheck: outcome.report && !plan.escalate && !plan.security, areas: plan.areas });
     await recordDecision({
@@ -48,7 +49,9 @@ export default defineTool({
       upstream: plan.addLabels.find((label) => label.startsWith("upstream/")) ?? null,
       plannedLabels: plan.addLabels,
       areas: plan.areas,
-      facts: plan.facts,
+      facts: plan.quiet ? [] : plan.facts,
+      // Nothing is said on the issue: the comment is empty whatever the later tools find.
+      quiet: plan.quiet ?? null,
       next: plan.escalate || plan.security ? [] : outcome.next,
     };
   },

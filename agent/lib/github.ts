@@ -394,6 +394,7 @@ const timelineEventSchema = z.object({
           number: z.number(),
           title: z.string(),
           html_url: z.string(),
+          state: z.string().optional(),
           pull_request: z.object({ merged_at: z.string().nullable().optional() }).optional(),
           repository: z.object({ full_name: z.string() }).optional(),
         })

@@ -42,8 +42,8 @@ export interface TriagePlan {
   skipped: string | null;
   /** Versions for the templated retest request, set with the `RETEST_REQUEST` fact. */
   retest?: RetestRequest | null;
-  /** Labels no step may remove, whatever an earlier step planned. */
-  keepLabels?: string[];
+  /** Why nothing is said on the issue, when someone is already on it. Labels still apply, except the ones that wait on the reporter. */
+  quiet?: string | null;
   /** Once-only markers of what this run asks for. Set when the plan is written, so a request that was never posted is planned again. */
   once?: string[];
   /** Issue Type after classification, existing or proposed. */
@@ -72,7 +72,7 @@ export function emptyPlan(issue: IssueRef, runId: string, dryRun: boolean): Tria
     security: false,
     skipped: null,
     retest: null,
-    keepLabels: [],
+    quiet: null,
     once: [],
     type: null,
     steps: [],
@@ -91,25 +91,30 @@ export interface PlanPatch {
   skipped?: string;
   type?: string;
   retest?: RetestRequest;
-  keepLabels?: string[];
+  quiet?: string | null;
   once?: string[];
   /** A duplicate needs no reproduction: drops the planned `needs reproduction`, its request and a retest request. */
   supersedesReproduction?: boolean;
 }
 
+/** Labels that wait on the reporter. A quiet run asks the reporter nothing, so it applies none of them. */
+export const WAITING_LABELS = ["needs reproduction", "needs verification"];
+
 export function mergePlan(plan: TriagePlan, step: string, patch: PlanPatch): TriagePlan {
   const unique = (values: string[]) => [...new Set(values)];
   const drop = patch.supersedesReproduction === true;
+  const quiet = plan.quiet ?? patch.quiet ?? null;
   const mentions = [...plan.mentions];
-  const keepLabels = unique([...(plan.keepLabels ?? []), ...(patch.keepLabels ?? [])]);
   for (const mention of patch.mentions ?? []) {
     if (!mentions.some((existing) => existing.template === mention.template)) mentions.push(mention);
   }
   return {
     ...plan,
     setType: patch.setType ?? plan.setType,
-    addLabels: unique([...plan.addLabels, ...(patch.addLabels ?? [])]).filter((label) => !drop || label !== "needs reproduction"),
-    removeLabels: unique([...plan.removeLabels, ...(patch.removeLabels ?? [])]).filter((label) => !keepLabels.includes(label)),
+    addLabels: unique([...plan.addLabels, ...(patch.addLabels ?? [])])
+      .filter((label) => !drop || label !== "needs reproduction")
+      .filter((label) => !quiet || !WAITING_LABELS.includes(label)),
+    removeLabels: unique([...plan.removeLabels, ...(patch.removeLabels ?? [])]),
     mentions,
     areas: unique([...plan.areas, ...(patch.areas ?? [])]),
     // A retest asks about a reproduction too, so it goes with it.
@@ -119,7 +124,7 @@ export function mergePlan(plan: TriagePlan, step: string, patch: PlanPatch): Tri
     security: plan.security || (patch.security ?? false),
     skipped: patch.skipped ?? plan.skipped,
     retest: drop ? null : (patch.retest ?? plan.retest ?? null),
-    keepLabels,
+    quiet,
     // A retest that is not asked must stay askable.
     once: unique([...(plan.once ?? []), ...(patch.once ?? [])]).filter((marker) => !drop || marker !== "retest-on-latest"),
     type: patch.type ?? plan.type,
@@ -148,11 +153,7 @@ export function sessionOf(runId: string): string {
 }
 
 export function hasWrites(plan: TriagePlan): boolean {
-  return (
-    plan.setType !== null ||
-    plan.addLabels.length > 0 ||
-    plan.removeLabels.length > 0 ||
-    plan.mentions.length > 0 ||
-    plan.facts.length > 0
-  );
+  // A disclosed vulnerability is answered even on a quiet issue, as in `buildComment`.
+  const speaks = (!plan.quiet || plan.security) && (plan.mentions.length > 0 || plan.facts.length > 0);
+  return plan.setType !== null || plan.addLabels.length > 0 || plan.removeLabels.length > 0 || speaks;
 }

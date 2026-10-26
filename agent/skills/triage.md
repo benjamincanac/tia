@@ -26,6 +26,7 @@ Start with the tool named in the turn.
 Call `classify_issue`. Then:
 
 - `skipped` is set: go to step 4 with an empty comment.
+- `quiet` is set: someone is already on the issue, or it is old backlog. Labels still apply and nothing is said on it. Continue as below, then call `apply_triage` with an empty comment.
 - `escalate` is true: load the `escalation` skill. No comment.
 - `security` is true: load the `escalation` skill. One sentence, nothing about the vulnerability.
 - Otherwise continue with `next`.

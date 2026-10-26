@@ -62,6 +62,8 @@ export function mentionLine(config: RepoConfig, plan: TriagePlan): string {
 }
 
 export function buildComment(config: RepoConfig, plan: TriagePlan, written: string, reproduction: ReproductionSettings): string {
+  // Someone is already on it. A disclosed vulnerability is still answered.
+  if (plan.quiet && !plan.security) return "";
   const parts: string[] = [];
   if (plan.security) {
     // Fixed wording. Nothing the model writes is posted next to a disclosed vulnerability.
@@ -92,6 +94,7 @@ export interface AppliedActions {
  * explicit mention, and its text is the answer.
  */
 export function reporterText(plan: TriagePlan | null, comment: string): string {
+  if (plan?.quiet && !plan.security) return "";
   return plan && plan.facts.every((fact) => TEMPLATED_FACTS.includes(fact)) ? "" : comment.trim();
 }
 
@@ -168,7 +171,8 @@ export async function applyPlan(
       actions.commentUrl = await addComment(plan.issue, actions.comment);
       await setLastAnnounced(plan.issue, fingerprint);
     }
-    for (const marker of plan.once ?? []) await markOnce(plan.issue, marker);
+    // A quiet run asked nothing, so nothing is used up.
+    if (!plan.quiet) for (const marker of plan.once ?? []) await markOnce(plan.issue, marker);
   } else {
     console.log(`[tia] ${plan.dryRun ? "dry-run" : "blocked"} ${plan.issue.owner}/${plan.issue.repo}#${plan.issue.issueNumber}`, JSON.stringify(actions));
   }

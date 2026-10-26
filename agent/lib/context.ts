@@ -16,6 +16,7 @@ import {
   type Issue,
   type IssueRef,
 } from "./github";
+import { WAITING_LABELS } from "./plan";
 import { DEFAULT_KINDS, loadIntakeLabels, loadIssueKinds, loadReproductionSettings, reproductionFromConfig, type IssueKind, type ReproductionSettings } from "./issue-forms";
 
 export const FIXTURE_OWNER = "fixture";
@@ -74,6 +75,8 @@ const fixtureSchema = z.object({
     comments: z.array(commentSchema).default([]),
   }),
   similar: z.array(candidateSchema).default([]),
+  /** Open pull requests that reference the issue. */
+  openPullRequests: z.array(z.number()).default([]),
   fixedCandidates: z.array(fixedCandidateSchema).default([]),
   upstreamCandidates: z.array(candidateSchema).default([]),
 });
@@ -98,6 +101,8 @@ export interface TriageContext {
   /** The reporter set the Issue Type, through an issue form. */
   reporterType: boolean;
   lastHumanActivity: number | null;
+  /** Open pull requests that reference the issue. */
+  openPullRequests: number[];
   pinned: boolean;
   fixture: Fixture | null;
 }
@@ -130,6 +135,7 @@ async function loadFixture(ref: IssueRef): Promise<TriageContext> {
     reporterLabels: new Set(fixture.reporterLabels),
     reporterType: fixture.reporterType,
     lastHumanActivity: null,
+    openPullRequests: fixture.openPullRequests,
     pinned: false,
     fixture,
   };
@@ -171,6 +177,12 @@ export async function loadTriageContext(
     }
   }
 
+  const openPullRequests = timeline.flatMap((event) => {
+    const source = event.source?.issue;
+    const sameRepo = !source?.repository || source.repository.full_name.toLowerCase() === `${ref.owner}/${ref.repo}`.toLowerCase();
+    return event.event === "cross-referenced" && source?.pull_request && source.state === "open" && sameRepo ? [source.number] : [];
+  });
+
   return {
     config,
     issue,
@@ -183,6 +195,7 @@ export async function loadTriageContext(
     reporterLabels: isMaintainer(config, issue.author) ? new Set() : reporterAppliedLabels(timeline, issue.author),
     reporterType: !isMaintainer(config, issue.author) && reporterSetType(timeline, issue.author),
     lastHumanActivity: humanTimes.length ? Math.max(...humanTimes) : null,
+    openPullRequests: [...new Set(openPullRequests)],
     pinned: pinned.includes(ref.issueNumber),
     fixture: null,
     dryRun: false,
@@ -194,6 +207,30 @@ function isMaintainer(config: RepoConfig, login: string): boolean {
 }
 
 const HOUR_MS = 60 * 60_000;
+const DAY_MS = 24 * HOUR_MS;
+const MAINTAINER_ASSOCIATIONS = ["OWNER", "MEMBER", "COLLABORATOR"];
+
+/**
+ * Why tia should say nothing on the issue, or `null`. Someone is already on it: a pull request is open,
+ * a maintainer replied or labeled it. Or it is old backlog, where a request to a reporter who moved on
+ * years ago is noise. Labels still apply. An explicit @-mention is answered whatever this says.
+ */
+export function quietReason(context: TriageContext): string | null {
+  const { config, issue } = context;
+  // tia is waiting on the reporter for its own request. What they answer is reported to the maintainers as usual.
+  if (issue.labels.some((label) => WAITING_LABELS.includes(label) && !context.humanLabels.has(label))) return null;
+  if (context.openPullRequests.length) return `pull request #${context.openPullRequests[0]} is open`;
+  const maintainer = (login: string, association: string) => MAINTAINER_ASSOCIATIONS.includes(association) || isMaintainer(config, login);
+  if (issue.comments.some((comment) => comment.author !== issue.author && comment.authorType !== "Bot" && maintainer(comment.author, comment.authorAssociation))) {
+    return "a maintainer replied";
+  }
+  // Only people with triage access label an issue. The reporter's form and tia's own labels are not a decision.
+  const labeled = issue.labels.find((label) => context.humanLabels.has(label) && !context.reporterLabels.has(label) && !context.intakeLabels.includes(label));
+  if (labeled) return `a maintainer labeled it \`${labeled}\``;
+  // Fixtures carry fixed dates, and must not turn into backlog as they age.
+  if (!context.fixture && Date.now() - Date.parse(issue.createdAt) >= config.sweep.staleDays * DAY_MS) return `opened more than ${config.sweep.staleDays} days ago`;
+  return null;
+}
 
 /** The one skip that passes with time. The others hold for as long as the issue stays what it is. */
 export const RECENT_ACTIVITY = "a human labeled or commented in the last hour";

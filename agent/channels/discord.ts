@@ -32,6 +32,7 @@ async function describeWrite(input: unknown, runId: string): Promise<string> {
   if (add.length) lines.push(`Add: ${add.join(", ")}`);
   if (remove.length) lines.push(`Remove: ${remove.join(", ")}`);
 
+  if (plan.quiet && !plan.security) lines.push(`No comment: ${plan.quiet}`);
   // What `apply_triage` would post, built the same way.
   const body = context ? buildComment(context.config, plan, reporterText(recorded, comment), context.reproduction) : reporterText(recorded, comment);
   if (body) lines.push("", body.length > 900 ? `${body.slice(0, 900)}…` : body);

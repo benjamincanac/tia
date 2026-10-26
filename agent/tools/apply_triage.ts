@@ -14,7 +14,7 @@ export default defineTool({
     comment: z
       .string()
       .describe(
-        `The comment for the reporter, in English, friendly maintainer tone, under ${MAX_COMMENT_WORDS} words, conveying the plan's facts and nothing else. Empty string when the plan has no facts besides VERSION_REQUEST, REPRODUCTION_REQUEST and RETEST_REQUEST. Those requests and the maintainer mention are appended automatically, do not write them.`,
+        `The comment for the reporter, in English, friendly maintainer tone, under ${MAX_COMMENT_WORDS} words, conveying the plan's facts and nothing else. Empty string when the plan has no facts besides VERSION_REQUEST, REPRODUCTION_REQUEST and RETEST_REQUEST, or when classify_issue returned quiet. Those requests and the maintainer mention are appended automatically, do not write them.`,
       ),
   }),
   approval: { request: writeApproval, response: maintainerResponse },

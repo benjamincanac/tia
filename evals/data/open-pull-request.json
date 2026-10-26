@@ -1,0 +1,54 @@
+{
+  "config": {
+    "maintainers": [
+      "maintainer"
+    ],
+    "upstreams": [
+      "unovue/reka-ui",
+      "tailwindlabs/tailwindcss"
+    ],
+    "package": {
+      "name": "@acme/ui"
+    },
+    "nextMajor": "v5",
+    "reproduction": {
+      "blank": [
+        "acme-ui-starter"
+      ]
+    },
+    "securityPolicy": "https://example.com/SECURITY.md",
+    "areas": [
+      {
+        "kind": "component",
+        "names": [
+          "Button",
+          "Select",
+          "SelectMenu",
+          "Modal",
+          "Table",
+          "Input",
+          "Tooltip"
+        ]
+      }
+    ]
+  },
+  "latestVersion": "1.4.0",
+  "openPullRequests": [
+    7231
+  ],
+  "issue": {
+    "authorAssociation": "NONE",
+    "labels": [
+      "triage"
+    ],
+    "type": null,
+    "createdAt": "2026-09-20T09:00:00Z",
+    "comments": [],
+    "title": "Table: virtualized rows re-render on every scroll since 1.4.0",
+    "author": "emil",
+    "body": "### Environment\n\n- @acme/ui: 1.4.0\n- Vue: 3.5.13\n\n### Description\n\nSince upgrading from 1.3.2 to 1.4.0, every rendered row of a virtualized `UTable` re-renders on each horizontal scroll. On 1.3.2 a horizontal scroll re-rendered no rows.\n\n### Reproduction\n\nhttps://github.com/emil/acme-table-virtualize-rerender"
+  },
+  "similar": [],
+  "fixedCandidates": [],
+  "upstreamCandidates": []
+}
