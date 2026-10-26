@@ -28,6 +28,9 @@ export function choiceConfidence<C extends string>(answer: ChoiceAnswer<C>): num
 
 const MAX_BODY = 8_000;
 const MAX_COMMENT = 1_500;
+/** Maintainers and contributors write the diagnosis, and it rarely fits in a reporter's budget. */
+const MAX_INFORMED_COMMENT = 4_000;
+const INFORMED = ["OWNER", "MEMBER", "COLLABORATOR", "CONTRIBUTOR"];
 const MAX_COMMENTS = 30;
 /**
  * What a step gets when it does not read the thread, only the report: the last few comments, in
@@ -44,8 +47,8 @@ export function clipBody(text: string): string {
   return clip(text, MAX_BODY);
 }
 
-export function clipComments<T extends { body: string }>(comments: readonly T[], max = MAX_COMMENTS): T[] {
+export function clipComments<T extends { body: string; authorAssociation?: string }>(comments: readonly T[], max = MAX_COMMENTS): T[] {
   // `slice(-0)` is the whole array, so a budget of none is answered before it.
   const kept = max <= 0 ? [] : comments.slice(-max);
-  return kept.map((comment) => ({ ...comment, body: clip(comment.body, MAX_COMMENT) }));
+  return kept.map((comment) => ({ ...comment, body: clip(comment.body, INFORMED.includes(comment.authorAssociation ?? "") ? MAX_INFORMED_COMMENT : MAX_COMMENT) }));
 }
