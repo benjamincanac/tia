@@ -18,10 +18,10 @@
     "validate-config": "tsx --env-file-if-exists=.env.local scripts/validate-config.ts"
   },
   "dependencies": {
-    "@upstash/redis": "^1.39.0",
-    "@vercel/connect": "^2.5.5",
-    "ai": "^7.0.153",
-    "eve": "^0.83.2",
+    "@upstash/redis": "^1.41.0",
+    "@vercel/connect": "^2.9.5",
+    "ai": "^7.0.177",
+    "eve": "^0.91.0",
     "yaml": "^2.9.1",
     "zod": "^4.6.7"
   },
@@ -34,5 +34,5 @@
   "engines": {
     "node": "24.x"
   },
-  "packageManager": "pnpm@12.15.0"
+  "packageManager": "pnpm@12.21.0"
 }
